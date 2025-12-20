@@ -28,6 +28,26 @@ class BinanceService {
   static const String fapiBaseUrl = 'https://fapi.binance.com';
   static const String spotBaseUrl = 'https://api.binance.com';
 
+  // Get list of active trading symbols (status = TRADING)
+  Future<Set<String>> getActiveTradingSymbols() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$fapiBaseUrl/fapi/v1/exchangeInfo'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final symbols = data['symbols'] as List<dynamic>;
+        return symbols
+            .where((s) => s['status'] == 'TRADING')
+            .map((s) => s['symbol'] as String)
+            .toSet();
+      }
+    } catch (e) {
+      print('Error getting active symbols: $e');
+    }
+    return {};
+  }
+
   Future<List<Ticker24h>> getFutures24hrTicker() async {
     final response = await http.get(
       Uri.parse('$fapiBaseUrl/fapi/v1/ticker/24hr'),

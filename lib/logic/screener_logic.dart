@@ -14,23 +14,29 @@ class ScreenerLogic {
   final BinanceService _binance = BinanceService();
 
   Future<List<CoinData>> scan({int limit = 30}) async {
-    // 1. Get Universe (Futures + Spot) similar to web implementation
+    // 1. Get Universe (Futures + Spot + Active symbols)
     final resultsTickers = await Future.wait([
       _binance.getFutures24hrTicker(),
       _binance.getSpot24hrTicker(),
+      _binance.getActiveTradingSymbols(),
     ]);
 
-    final futuresTickers = resultsTickers[0];
-    final spotTickers = resultsTickers[1];
+    final futuresTickers = resultsTickers[0] as List<Ticker24h>;
+    final spotTickers = resultsTickers[1] as List<Ticker24h>;
+    final activeSymbols = resultsTickers[2] as Set<String>;
 
     final Map<String, Ticker24h> spotMap = {
       for (final t in spotTickers) t.symbol: t,
     };
 
-    // Sort by QuoteVolume and Filter USDT
+    // Sort by QuoteVolume and Filter USDT Perpetual only
+    // Exclude delivery futures (contains '_') and only include perpetual contracts
+    // Also filter only TRADING status symbols
     final candidates =
         futuresTickers
             .where((t) => t.symbol.endsWith('USDT'))
+            .where((t) => !t.symbol.contains('_')) // Exclude delivery futures with expiry dates
+            .where((t) => activeSymbols.contains(t.symbol)) // Only TRADING status
             .where(
               (t) => (double.tryParse(t.quoteVolume) ?? 0) > 50000000,
             ) // 50M

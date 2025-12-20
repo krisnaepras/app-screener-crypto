@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../models/coin_data.dart';
 import '../logic/screener_logic.dart';
+import 'coin_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -115,9 +116,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CoinDetailScreen(coin: coin),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -315,6 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ],
                     ),
+                  ),
                   ),
                 );
               },
