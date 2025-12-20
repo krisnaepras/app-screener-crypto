@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'services/notification_service.dart';
@@ -8,9 +10,11 @@ import 'ui/main_navigation.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Services
-  await NotificationService.initialize();
-  await initializeService();
+  // Initialize Services only on mobile platforms
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await NotificationService.initialize();
+    await initializeService();
+  }
 
   runApp(const MyApp());
 }
@@ -30,6 +34,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _requestPermissions() async {
+    // Only request permissions on Android/iOS
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return;
+    }
+
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
         FlutterLocalNotificationsPlugin();
 

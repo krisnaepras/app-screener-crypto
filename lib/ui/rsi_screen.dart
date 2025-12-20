@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../models/coin_data.dart';
 import '../logic/screener_logic.dart';
@@ -21,23 +23,26 @@ class _RsiScreenState extends State<RsiScreen> {
     super.initState();
     _loadData();
 
-    // Listen to background service updates
-    FlutterBackgroundService().on('update').listen((event) {
-      if (event != null && event['data'] != null) {
-        final List<dynamic> list = event['data'] as List<dynamic>;
-        if (mounted) {
-          setState(() {
-            _coins = list
-                .map(
-                  (json) => CoinData.fromJson(Map<String, dynamic>.from(json)),
-                )
-                .toList();
-            _filterRsiCoins();
-            _isLoading = false;
-          });
+    // Listen to background service updates only on mobile
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      FlutterBackgroundService().on('update').listen((event) {
+        if (event != null && event['data'] != null) {
+          final List<dynamic> list = event['data'] as List<dynamic>;
+          if (mounted) {
+            setState(() {
+              _coins = list
+                  .map(
+                    (json) =>
+                        CoinData.fromJson(Map<String, dynamic>.from(json)),
+                  )
+                  .toList();
+              _filterRsiCoins();
+              _isLoading = false;
+            });
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   Future<void> _loadData() async {

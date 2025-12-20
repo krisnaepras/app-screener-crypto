@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -5,6 +7,11 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
+    // Only initialize on Android/iOS
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return;
+    }
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -12,7 +19,7 @@ class NotificationService {
         InitializationSettings(android: initializationSettingsAndroid);
 
     await _notificationsPlugin.initialize(initializationSettings);
-    
+
     // Create channel for Android 8.0+
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'screener_alerts', // id
@@ -23,20 +30,23 @@ class NotificationService {
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     // Foreground service channel must exist before the service starts.
-    const AndroidNotificationChannel serviceChannel = AndroidNotificationChannel(
-      'screener_service',
-      'Screener Background Service',
-      description: 'Running screener in background',
-      importance: Importance.low,
-    );
+    const AndroidNotificationChannel serviceChannel =
+        AndroidNotificationChannel(
+          'screener_service',
+          'Screener Background Service',
+          description: 'Running screener in background',
+          importance: Importance.low,
+        );
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(serviceChannel);
   }
 
@@ -45,16 +55,18 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'screener_alerts',
-      'Screener Alerts',
-      channelDescription: 'Notifications for Screener triggers',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'screener_alerts',
+          'Screener Alerts',
+          channelDescription: 'Notifications for Screener triggers',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
 
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+    );
 
     await _notificationsPlugin.show(id, title, body, details);
   }
