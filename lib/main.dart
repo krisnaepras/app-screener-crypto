@@ -7,7 +7,7 @@ import 'ui/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Services
   await NotificationService.initialize();
   await initializeService();
@@ -23,7 +23,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  
   @override
   void initState() {
     super.initState();
@@ -33,16 +32,27 @@ class _MyAppState extends State<MyApp> {
   Future<void> _requestPermissions() async {
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
         FlutterLocalNotificationsPlugin();
-        
+
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+        flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
     if (androidImplementation != null) {
-      final bool? granted =
-          await androidImplementation.requestNotificationsPermission();
+      final bool? granted = await androidImplementation
+          .requestNotificationsPermission();
       if (granted ?? true) {
-        await FlutterBackgroundService().startService();
+        // Start service only in main isolate
+        try {
+          final service = FlutterBackgroundService();
+          final isRunning = await service.isRunning();
+          if (!isRunning) {
+            await service.startService();
+          }
+        } catch (e) {
+          print('Error starting service: $e');
+        }
       }
     }
   }

@@ -36,6 +36,42 @@ class MarketFeatures {
     required this.isRetest,
     required this.isRetestFail,
   });
+
+  Map<String, dynamic> toJson() => {
+    'pctChange24h': pctChange24h,
+    'overExtEma': overExtEma,
+    'overExtVwap': overExtVwap,
+    'isAboveUpperBand': isAboveUpperBand,
+    'candleRangeRatio': candleRangeRatio,
+    'rsi': rsi,
+    'isRsiBearishDiv': isRsiBearishDiv,
+    'rejectionWickRatio': rejectionWickRatio,
+    'fundingRate': fundingRate,
+    'openInterestDelta': openInterestDelta,
+    'nearestSupport': nearestSupport,
+    'distToSupportATR': distToSupportATR,
+    'isBreakdown': isBreakdown,
+    'isRetest': isRetest,
+    'isRetestFail': isRetestFail,
+  };
+
+  factory MarketFeatures.fromJson(Map<String, dynamic> json) => MarketFeatures(
+    pctChange24h: (json['pctChange24h'] ?? 0).toDouble(),
+    overExtEma: (json['overExtEma'] ?? 0).toDouble(),
+    overExtVwap: (json['overExtVwap'] ?? 0).toDouble(),
+    isAboveUpperBand: json['isAboveUpperBand'] ?? false,
+    candleRangeRatio: (json['candleRangeRatio'] ?? 0).toDouble(),
+    rsi: (json['rsi'] ?? 50).toDouble(),
+    isRsiBearishDiv: json['isRsiBearishDiv'] ?? false,
+    rejectionWickRatio: (json['rejectionWickRatio'] ?? 0).toDouble(),
+    fundingRate: (json['fundingRate'] ?? 0).toDouble(),
+    openInterestDelta: (json['openInterestDelta'] ?? 0).toDouble(),
+    nearestSupport: json['nearestSupport']?.toDouble(),
+    distToSupportATR: json['distToSupportATR']?.toDouble(),
+    isBreakdown: json['isBreakdown'] ?? false,
+    isRetest: json['isRetest'] ?? false,
+    isRetestFail: json['isRetestFail'] ?? false,
+  );
 }
 
 MarketFeatures extractFeatures(
@@ -56,7 +92,7 @@ MarketFeatures extractFeatures(
   final double currentClose = prices[lastIdx];
   final double currentHigh = highs[lastIdx];
   final double currentLow = lows[lastIdx];
-  
+
   // Indicators
   final double? currentEma = ema50[lastIdx];
   final double? currentVwap = vwap[lastIdx];
@@ -65,9 +101,15 @@ MarketFeatures extractFeatures(
   final double? currentUpperBand = bb.upper[lastIdx];
 
   // Overextension
-  final double overExtEma = currentEma != null ? (currentClose - currentEma) / currentEma : 0;
-  final double overExtVwap = currentVwap != null ? (currentClose - currentVwap) / currentVwap : 0;
-  final bool isAboveUpperBand = currentUpperBand != null ? currentClose > currentUpperBand : false;
+  final double overExtEma = currentEma != null
+      ? (currentClose - currentEma) / currentEma
+      : 0;
+  final double overExtVwap = currentVwap != null
+      ? (currentClose - currentVwap) / currentVwap
+      : 0;
+  final bool isAboveUpperBand = currentUpperBand != null
+      ? currentClose > currentUpperBand
+      : false;
 
   // Placeholder
   const double rejectionWickRatio = 0;
@@ -81,7 +123,12 @@ MarketFeatures extractFeatures(
 
   if (supportPrice != null && currentAtr > 0) {
     isBrk = isBreakdown(currentClose, supportPrice, currentAtr);
-    isRetestZone = isInRetestZone(currentHigh, currentLow, supportPrice, currentAtr);
+    isRetestZone = isInRetestZone(
+      currentHigh,
+      currentLow,
+      supportPrice,
+      currentAtr,
+    );
   }
 
   final double? distToSupportATR = (supportPrice != null && currentAtr > 0)

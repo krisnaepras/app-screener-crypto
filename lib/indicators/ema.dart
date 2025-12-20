@@ -1,5 +1,3 @@
-import 'dart:math';
-
 List<double?> calculateEMA(List<double> data, int period) {
   final List<double?> ema = List.filled(data.length, null);
   final k = 2 / (period + 1);

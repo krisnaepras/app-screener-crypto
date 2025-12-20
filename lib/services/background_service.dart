@@ -20,30 +20,33 @@ Future<void> initializeService() async {
       initialNotificationContent: 'Monitoring market...',
       foregroundServiceNotificationId: 888,
     ),
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: onStart,
-    ),
+    iosConfiguration: IosConfiguration(autoStart: true, onForeground: onStart),
   );
 }
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-  
+  // Do NOT call DartPluginRegistrant here - it should only be in main isolate
+  // DartPluginRegistrant.ensureInitialized();
+
   // Set up notifications
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  // We assume NotificationService.initialize() logic is essentially this setup, 
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  // We assume NotificationService.initialize() logic is essentially this setup,
   // but we need to ensure the channel exists for the service notification itself.
-  
+
   // Create channel for the Foreground Service notification
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'screener_service',
     'Screener Background Service',
     description: 'Running screener in background',
-    importance: Importance.low, 
+    importance: Importance.low,
   );
-  await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(channel);
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
 
   // Initialize general alerts channel
   await NotificationService.initialize();
@@ -54,7 +57,8 @@ void onStart(ServiceInstance service) async {
       if (await service.isForegroundService()) {
         service.setForegroundNotificationInfo(
           title: "Screener Active",
-          content: "Scanning market at ${DateTime.now().minute}:${DateTime.now().second}",
+          content:
+              "Scanning market at ${DateTime.now().minute}:${DateTime.now().second}",
         );
       }
     }
@@ -62,46 +66,40 @@ void onStart(ServiceInstance service) async {
     // Run Logic
     try {
       final logic = ScreenerLogic();
-      final results = await logic.scan(limit: 30); // limited to save bandwidth/battery
+      final results = await logic.scan(
+        limit: 30,
+      ); // limited to save bandwidth/battery
       final prefs = await SharedPreferences.getInstance();
 
       for (var coin in results) {
-         final String key = 'status_${coin.symbol}';
-          final String? lastStatus = prefs.getString(key);
-          
-          if (coin.status == 'TRIGGER') {
-            if (lastStatus != 'TRIGGER') {
-              await NotificationService.showNotification(
-                id: coin.symbol.hashCode,
-                title: 'EKSEKUSI! ${coin.symbol}',
-                body: 'Score: ${coin.score.toStringAsFixed(1)}. Breakout detected!',
-              );
-            }
-          } else if (coin.status == 'SETUP') {
-             if (lastStatus != 'SETUP' && lastStatus != 'TRIGGER') {
-               await NotificationService.showNotification(
-                id: coin.symbol.hashCode,
-                title: 'SIAP SIAP! ${coin.symbol}',
-                body: 'Score: ${coin.score.toStringAsFixed(1)}. High potential.',
-              );
-             }
+        final String key = 'status_${coin.symbol}';
+        final String? lastStatus = prefs.getString(key);
+
+        if (coin.status == 'TRIGGER') {
+          if (lastStatus != 'TRIGGER') {
+            await NotificationService.showNotification(
+              id: coin.symbol.hashCode,
+              title: 'EKSEKUSI! ${coin.symbol}',
+              body:
+                  'Score: ${coin.score.toStringAsFixed(1)}. Breakout detected!',
+            );
           }
-          await prefs.setString(key, coin.status);
+        } else if (coin.status == 'SETUP') {
+          if (lastStatus != 'SETUP' && lastStatus != 'TRIGGER') {
+            await NotificationService.showNotification(
+              id: coin.symbol.hashCode,
+              title: 'SIAP SIAP! ${coin.symbol}',
+              body: 'Score: ${coin.score.toStringAsFixed(1)}. High potential.',
+            );
+          }
+        }
+        await prefs.setString(key, coin.status);
       }
-      
+
       // Update data for UI if app is open
-      service.invoke(
-        'update',
-        {'data': results.map((e) => {
-            'symbol': e.symbol,
-            'price': e.price,
-            'score': e.score,
-            'status': e.status,
-            'priceChangePercent': e.priceChangePercent,
-            'fundingRate': e.fundingRate,
-        }).toList()},
-      );
-      
+      service.invoke('update', {
+        'data': results.map((e) => e.toJson()).toList(),
+      });
     } catch (e) {
       print("Service Error: $e");
     }
