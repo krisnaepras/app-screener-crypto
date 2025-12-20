@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'rsi_screen.dart';
+import 'scalping_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -12,7 +13,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [const HomeScreen(), const RsiScreen()];
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const RsiScreen(),
+    const ScalpingScreen(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -37,6 +42,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.show_chart_outlined),
             selectedIcon: Icon(Icons.show_chart),
             label: 'RSI',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flash_on_outlined),
+            selectedIcon: Icon(Icons.flash_on),
+            label: 'Scalping',
           ),
         ],
       ),
