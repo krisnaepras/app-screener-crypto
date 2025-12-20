@@ -209,463 +209,448 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
     };
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'TRIGGER':
-        return Colors.redAccent;
-      case 'SETUP':
-        return Colors.orangeAccent;
-      case 'WATCH':
-        return Colors.blueAccent;
-      default:
-        return Colors.grey;
-    }
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('⚡ Quick Scalping (15m)'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Target: 1-2% profit | SL: 0.8% | Timeframe: 15-30 menit',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const Divider(height: 16),
+              const Text(
+                '📌 Cara Entry:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.amber,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '• PRIORITAS: Score 60+ = Setup terbaik\n'
+                '• Score 40-59 = Boleh entry tapi risk lebih tinggi\n'
+                '• Score <40 = Skip, tunggu yang lebih baik',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade300),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                ),
+                child: Text(
+                  '💡 Signal = Direction (Long/Short)\n'
+                  'Score = Kualitas setup (momentum + posisi)\n'
+                  'Entry terbaik: Signal ✓ + Score tinggi ✓',
+                  style: TextStyle(fontSize: 10, color: Colors.amber.shade200),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scalping Signals'),
+        title: Row(
+          children: [
+            const Text('Scalping Signals'),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.help_outline, size: 20),
+              onPressed: _showInfoDialog,
+              tooltip: 'Info',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: Column(
-        children: [
-          // Info Card
-          Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '⚡ Quick Scalping (15m)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Target: 1-2% profit | SL: 0.8% | Timeframe: 15-30 menit',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const Divider(height: 16),
-                const Text(
-                  '📌 Cara Entry:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: Colors.amber,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _coins == null || _coins!.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No scalping signals / Error'),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '• PRIORITAS: Score 60+ = Setup terbaik\n'
-                  '• Score 40-59 = Boleh entry tapi risk lebih tinggi\n'
-                  '• Score <40 = Skip, tunggu yang lebih baik',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade300),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    '💡 Signal = Direction (Long/Short)\n'
-                    'Score = Kualitas setup (momentum + posisi)\n'
-                    'Entry terbaik: Signal ✓ + Score tinggi ✓',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.amber.shade200,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _coins!.length,
+              itemBuilder: (context, index) {
+                final coin = _coins![index];
+                final features = coin.features!;
+                final signalData = _getScalpingSignal(coin);
+                final scalpingScore = _calculateScalpingScore(coin);
 
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _coins == null || _coins!.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('No scalping signals / Error'),
-                        ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry'),
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CoinDetailScreen(coin: coin),
                         ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _coins!.length,
-                    itemBuilder: (context, index) {
-                      final coin = _coins![index];
-                      final features = coin.features!;
-                      final signalData = _getScalpingSignal(coin);
-                      final scalpingScore = _calculateScalpingScore(coin);
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CoinDetailScreen(coin: coin),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              // Direction Badge
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: signalData['color'],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      signalData['direction'] == 'LONG'
+                                          ? Icons.arrow_upward
+                                          : signalData['direction'] == 'SHORT'
+                                          ? Icons.arrow_downward
+                                          : Icons.sync,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    Text(
+                                      signalData['direction'],
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
+                              const SizedBox(width: 12),
+
+                              // Coin Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      coin.symbol.replaceAll('USDT', ''),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '${coin.priceChangePercent.toStringAsFixed(2)}%',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: coin.priceChangePercent >= 0
+                                                ? Colors.green
+                                                : Colors.red,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'RSI ${features.rsi.toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Scalping Score with quality indicator
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Quality',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        scalpingScore.toStringAsFixed(0),
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: scalpingScore >= 60
+                                              ? Colors.green
+                                              : scalpingScore >= 40
+                                              ? Colors.orange
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      if (scalpingScore >= 60)
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.green,
+                                          size: 16,
+                                        )
+                                      else if (scalpingScore >= 40)
+                                        const Icon(
+                                          Icons.star_half,
+                                          color: Colors.orange,
+                                          size: 16,
+                                        )
+                                      else
+                                        const Icon(
+                                          Icons.star_border,
+                                          color: Colors.grey,
+                                          size: 16,
+                                        ),
+                                    ],
+                                  ),
+                                  Text(
+                                    scalpingScore >= 60
+                                        ? 'Best'
+                                        : scalpingScore >= 40
+                                        ? 'OK'
+                                        : 'Skip',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: scalpingScore >= 60
+                                          ? Colors.green
+                                          : scalpingScore >= 40
+                                          ? Colors.orange
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Signal
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: (signalData['color'] as Color).withOpacity(
+                                0.2,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: (signalData['color'] as Color)
+                                    .withOpacity(0.5),
+                              ),
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Direction Badge
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: signalData['color'],
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            signalData['direction'] == 'LONG'
-                                                ? Icons.arrow_upward
-                                                : signalData['direction'] ==
-                                                      'SHORT'
-                                                ? Icons.arrow_downward
-                                                : Icons.sync,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                          Text(
-                                            signalData['direction'],
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-
-                                    // Coin Info
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            coin.symbol.replaceAll('USDT', ''),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                '${coin.priceChangePercent.toStringAsFixed(2)}%',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color:
-                                                      coin.priceChangePercent >=
-                                                          0
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'RSI ${features.rsi.toStringAsFixed(0)}',
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      child: Text(
+                                        signalData['signal'],
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: signalData['color'],
+                                        ),
                                       ),
                                     ),
-
-                                    // Scalping Score with quality indicator
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'Quality',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey.shade400,
+                                    // Recommendation based on score
+                                    if (scalpingScore >= 60)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
                                           ),
                                         ),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              scalpingScore.toStringAsFixed(0),
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: scalpingScore >= 60
-                                                    ? Colors.green
-                                                    : scalpingScore >= 40
-                                                    ? Colors.orange
-                                                    : Colors.grey,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            if (scalpingScore >= 60)
-                                              const Icon(
-                                                Icons.star,
-                                                color: Colors.green,
-                                                size: 16,
-                                              )
-                                            else if (scalpingScore >= 40)
-                                              const Icon(
-                                                Icons.star_half,
-                                                color: Colors.orange,
-                                                size: 16,
-                                              )
-                                            else
-                                              const Icon(
-                                                Icons.star_border,
-                                                color: Colors.grey,
-                                                size: 16,
-                                              ),
-                                          ],
-                                        ),
-                                        Text(
-                                          scalpingScore >= 60
-                                              ? 'Best'
-                                              : scalpingScore >= 40
-                                              ? 'OK'
-                                              : 'Skip',
+                                        child: const Text(
+                                          'ENTRY NOW',
                                           style: TextStyle(
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold,
-                                            color: scalpingScore >= 60
-                                                ? Colors.green
-                                                : scalpingScore >= 40
-                                                ? Colors.orange
-                                                : Colors.grey,
+                                            color: Colors.white,
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      )
+                                    else if (scalpingScore >= 40)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'RISKY',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'SKIP',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-
-                                // Signal
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: (signalData['color'] as Color)
-                                        .withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: (signalData['color'] as Color)
-                                          .withOpacity(0.5),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              signalData['signal'],
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: signalData['color'],
-                                              ),
-                                            ),
-                                          ),
-                                          // Recommendation based on score
-                                          if (scalpingScore >= 60)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                'ENTRY NOW',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            )
-                                          else if (scalpingScore >= 40)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.orange,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                'RISKY',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            )
-                                          else
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                'SKIP',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      if ((signalData['reasons'] as List)
-                                          .isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          (signalData['reasons'] as List).join(
-                                            ' • ',
-                                          ),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey.shade400,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-
-                                // Entry/SL/TP info
-                                if (signalData['entry'] != null) ...[
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        _buildPriceInfo(
-                                          'Entry',
-                                          signalData['entry'],
-                                          Colors.blue,
-                                        ),
-                                        _buildPriceInfo(
-                                          'SL',
-                                          signalData['stopLoss'],
-                                          Colors.red,
-                                        ),
-                                        _buildPriceInfo(
-                                          'TP',
-                                          signalData['takeProfit'],
-                                          Colors.green,
-                                        ),
-                                      ],
+                                if ((signalData['reasons'] as List)
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    (signalData['reasons'] as List).join(' • '),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade400,
                                     ),
                                   ),
                                 ],
-
-                                // Additional indicators
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    if (features.isBreakdown)
-                                      _buildBadge('BREAK', Colors.red),
-                                    if (features.isRetest)
-                                      _buildBadge('RETEST', Colors.blue),
-                                    _buildBadge(
-                                      'EMA ${(features.overExtEma * 100).toStringAsFixed(1)}%',
-                                      features.overExtEma > 0
-                                          ? Colors.red.shade700
-                                          : Colors.green.shade700,
-                                    ),
-                                    _buildBadge(
-                                      'VWAP ${(features.overExtVwap * 100).toStringAsFixed(1)}%',
-                                      features.overExtVwap > 0
-                                          ? Colors.orange.shade700
-                                          : Colors.blue.shade700,
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ),
-                        ),
-                      );
-                    },
+
+                          // Entry/SL/TP info
+                          if (signalData['entry'] != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildPriceInfo(
+                                    'Entry',
+                                    signalData['entry'],
+                                    Colors.blue,
+                                  ),
+                                  _buildPriceInfo(
+                                    'SL',
+                                    signalData['stopLoss'],
+                                    Colors.red,
+                                  ),
+                                  _buildPriceInfo(
+                                    'TP',
+                                    signalData['takeProfit'],
+                                    Colors.green,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          // Additional indicators
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              if (features.isBreakdown)
+                                _buildBadge('BREAK', Colors.red),
+                              if (features.isRetest)
+                                _buildBadge('RETEST', Colors.blue),
+                              _buildBadge(
+                                'EMA ${(features.overExtEma * 100).toStringAsFixed(1)}%',
+                                features.overExtEma > 0
+                                    ? Colors.red.shade700
+                                    : Colors.green.shade700,
+                              ),
+                              _buildBadge(
+                                'VWAP ${(features.overExtVwap * 100).toStringAsFixed(1)}%',
+                                features.overExtVwap > 0
+                                    ? Colors.orange.shade700
+                                    : Colors.blue.shade700,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-          ),
-        ],
-      ),
+                );
+              },
+            ),
     );
   }
 

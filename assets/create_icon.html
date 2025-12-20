@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Icon Converter</title>
+</head>
+<body>
+    <canvas id="canvas" width="1024" height="1024"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 1024, 1024, 160);
+        ctx.fill();
+        
+        // Lightning bolt
+        ctx.fillStyle = '#FFA000';
+        ctx.strokeStyle = '#FFD54F';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(560, 160);
+        ctx.lineTo(400, 560);
+        ctx.lineTo(520, 560);
+        ctx.lineTo(460, 860);
+        ctx.lineTo(700, 480);
+        ctx.lineTo(580, 480);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Chart line
+        ctx.strokeStyle = '#4CAF50';
+        ctx.lineWidth = 16;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(160, 700);
+        ctx.lineTo(280, 640);
+        ctx.lineTo(400, 720);
+        ctx.lineTo(520, 600);
+        ctx.lineTo(640, 680);
+        ctx.lineTo(760, 560);
+        ctx.lineTo(864, 640);
+        ctx.stroke();
+        
+        // Chart dots
+        const points = [[160,700], [280,640], [400,720], [520,600], [640,680], [760,560], [864,640]];
+        ctx.fillStyle = '#4CAF50';
+        points.forEach(([x, y]) => {
+            ctx.beginPath();
+            ctx.arc(x, y, 16, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        // Bottom accent
+        ctx.fillStyle = '#9C27B0';
+        ctx.beginPath();
+        ctx.roundRect(200, 840, 624, 8, 4);
+        ctx.fill();
+        
+        // Download
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'icon.png';
+            a.click();
+        });
+    </script>
+</body>
+</html>
