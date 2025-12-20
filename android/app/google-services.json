@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "694641988136",
+    "project_id": "epras-3ca58",
+    "storage_bucket": "epras-3ca58.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:694641988136:android:df086e16b135a1eedbdb1d",
+        "android_client_info": {
+          "package_name": "com.example.screener_micin_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7bTLlP5pa547ABbkCkkQEuVe77xhCfQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

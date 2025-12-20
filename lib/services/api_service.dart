@@ -33,16 +33,19 @@ class ApiService {
   Stream<List<CoinData>> getCoinStream() {
     _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
-    return _channel!.stream.map((event) {
-      if (event == null) return [];
-      try {
-        final List<dynamic> data = json.decode(event);
-        return data.map((json) => CoinData.fromJson(json)).toList();
-      } catch (e) {
-        print('Error parsing WS data: $e');
-        return [];
-      }
-    });
+    return _channel!.stream
+        .map((event) {
+          if (event == null) return <CoinData>[];
+          try {
+            final List<dynamic> data = json.decode(event);
+            return data.map((json) => CoinData.fromJson(json)).toList();
+          } catch (e) {
+            print('Error parsing WS data: $e');
+            return <CoinData>[];
+          }
+        })
+        .cast<List<CoinData>>()
+        .asBroadcastStream(); // Make it broadcast so multiple listeners can subscribe
   }
 
   void close() {
