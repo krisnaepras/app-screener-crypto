@@ -13,6 +13,8 @@ class RsiScreen extends StatefulWidget {
 class _RsiScreenState extends State<RsiScreen> {
   final ScreenerLogic _logic = ScreenerLogic();
   Stream<List<CoinData>>? _stream;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -22,16 +24,27 @@ class _RsiScreenState extends State<RsiScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _logic.dispose();
     super.dispose();
   }
 
   List<CoinData> _filterRsiCoins(List<CoinData> coins) {
     // Filter untuk RSI >= 60 atau RSI <= 40
-    final filtered = coins.where((coin) {
+    var filtered = coins.where((coin) {
       if (coin.features == null) return false;
       return coin.features!.rsi >= 60 || coin.features!.rsi <= 40;
     }).toList();
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (coin) =>
+                coin.symbol.toLowerCase().contains(_searchQuery.toLowerCase()),
+          )
+          .toList();
+    }
 
     // Sort by RSI extremes (highest and lowest first)
     filtered.sort((a, b) {
@@ -151,6 +164,38 @@ class _RsiScreenState extends State<RsiScreen> {
               ],
             ),
           ),
+
+          // Search field
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search coin...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
 
           Expanded(
             child: StreamBuilder<List<CoinData>>(
