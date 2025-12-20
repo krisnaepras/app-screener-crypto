@@ -1,24 +1,31 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/coin_data.dart';
 
 class ApiService {
-  // TODO: Replace with the actual deployed URL or user's local IP if testing on device
-  // For Android Emulator, 10.0.2.2 points to host localhost.
-  static const String baseUrl = 'http://10.0.2.2:5173/api/rank'; 
+  WebSocketChannel? _channel;
+  
+  // Use 10.0.2.2 for Android Emulator, localhost for iOS simulator?
+  // Let's assume Android emulator logic or localhost if web.
+  // For iOS simulator, it's localhost.
+  static const String wsUrl = 'ws://10.0.2.2:8080/ws'; 
 
-  Future<List<CoinData>> fetchRank() async {
-    try {
-      final response = await http.get(Uri.parse(baseUrl));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+  Stream<List<CoinData>> getCoinStream() {
+    _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+    
+    return _channel!.stream.map((event) {
+      if (event == null) return [];
+      try {
+        final List<dynamic> data = json.decode(event);
         return data.map((json) => CoinData.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load rank: ${response.statusCode}');
+      } catch (e) {
+        print('Error parsing WS data: $e');
+        return [];
       }
-    } catch (e) {
-      throw Exception('Failed to load rank: $e');
-    }
+    });
+  }
+
+  void close() {
+    _channel?.sink.close();
   }
 }

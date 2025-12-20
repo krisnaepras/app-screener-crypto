@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
-import 'package:flutter_background_service/flutter_background_service.dart';
 import '../models/coin_data.dart';
 import '../logic/screener_logic.dart';
 import 'coin_detail_screen.dart';
@@ -15,64 +12,19 @@ class ScalpingScreen extends StatefulWidget {
 
 class _ScalpingScreenState extends State<ScalpingScreen> {
   final ScreenerLogic _logic = ScreenerLogic();
-  List<CoinData>? _coins;
-  bool _isLoading = true;
+  Stream<List<CoinData>>? _stream;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-
-    // Listen to background service only on mobile
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      FlutterBackgroundService().on('update').listen((event) {
-        if (event != null && event['data'] != null) {
-          final List<dynamic> list = event['data'] as List<dynamic>;
-          if (mounted) {
-            setState(() {
-              _coins = list
-                  .map(
-                    (json) =>
-                        CoinData.fromJson(Map<String, dynamic>.from(json)),
-                  )
-                  .toList();
-              _filterScalpingCoins();
-              _isLoading = false;
-            });
-          }
-        }
-      });
-    }
+    _stream = _logic.coinStream;
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final coins = await _logic.scan();
-      if (mounted) {
-        setState(() {
-          _coins = coins;
-          _filterScalpingCoins();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print(e);
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _filterScalpingCoins() {
-    if (_coins == null) return;
+  List<CoinData> _filterScalpingCoins(List<CoinData> coins) {
+     if (coins.isEmpty) return [];
 
     // Filter untuk scalping: high volume, momentum, dan setup yang jelas
-    _coins = _coins!.where((coin) {
+    final filtered = coins.where((coin) {
       if (coin.features == null) return false;
 
       final features = coin.features!;
@@ -90,14 +42,17 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
     }).toList();
 
     // Sort by scalping score
-    _coins!.sort((a, b) {
+    filtered.sort((a, b) {
       final aScore = _calculateScalpingScore(a);
       final bScore = _calculateScalpingScore(b);
       return bScore.compareTo(aScore);
     });
+    
+    return filtered;
   }
 
   double _calculateScalpingScore(CoinData coin) {
+    if (coin.features == null) return 0;
     final features = coin.features!;
     double score = 0;
 
@@ -138,6 +93,7 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
   }
 
   Map<String, dynamic> _getScalpingSignal(CoinData coin) {
+    if (coin.features == null) return {};
     final features = coin.features!;
     String direction = '';
     String signal = '';
@@ -290,32 +246,37 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _coins == null || _coins!.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('No scalping signals / Error'),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _coins!.length,
+      body: StreamBuilder<List<CoinData>>(
+        stream: _stream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+             return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final coins = snapshot.data ?? [];
+          final filteredCoins = _filterScalpingCoins(coins);
+          
+          if (filteredCoins.isEmpty) {
+             return const Center(child: Text('No scalping signals found...'));
+          }
+
+          return ListView.builder(
+              itemCount: filteredCoins.length,
               itemBuilder: (context, index) {
-                final coin = _coins![index];
+                final coin = filteredCoins[index];
                 final features = coin.features!;
                 final signalData = _getScalpingSignal(coin);
                 final scalpingScore = _calculateScalpingScore(coin);
+                
+                // Safety check for map keys
+                final color = (signalData['color'] as Color?) ?? Colors.grey;
+                final direction = (signalData['direction'] as String?) ?? '';
+                final signal = (signalData['signal'] as String?) ?? '';
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
@@ -342,22 +303,22 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: signalData['color'],
+                                  color: color,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
                                   children: [
                                     Icon(
-                                      signalData['direction'] == 'LONG'
+                                      direction == 'LONG'
                                           ? Icons.arrow_upward
-                                          : signalData['direction'] == 'SHORT'
+                                          : direction == 'SHORT'
                                           ? Icons.arrow_downward
                                           : Icons.sync,
                                       color: Colors.white,
                                       size: 20,
                                     ),
                                     Text(
-                                      signalData['direction'],
+                                      direction,
                                       style: const TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
@@ -486,13 +447,10 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (signalData['color'] as Color).withOpacity(
-                                0.2,
-                              ),
+                              color: color.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: (signalData['color'] as Color)
-                                    .withOpacity(0.5),
+                                color: color.withOpacity(0.5),
                               ),
                             ),
                             child: Column(
@@ -504,11 +462,11 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        signalData['signal'],
+                                        signal,
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
-                                          color: signalData['color'],
+                                          color: color,
                                         ),
                                       ),
                                     ),
@@ -578,8 +536,7 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
                                       ),
                                   ],
                                 ),
-                                if ((signalData['reasons'] as List)
-                                    .isNotEmpty) ...[
+                                if ((signalData['reasons'] as List?)?.isNotEmpty ?? false) ...[
                                   const SizedBox(height: 4),
                                   Text(
                                     (signalData['reasons'] as List).join(' • '),
@@ -656,7 +613,9 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
                   ),
                 );
               },
-            ),
+            );
+        }
+      ),
     );
   }
 

@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
-import 'package:flutter_background_service/flutter_background_service.dart';
 import '../models/coin_data.dart';
 import '../logic/screener_logic.dart';
 import 'coin_detail_screen.dart';
@@ -14,63 +11,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Use local logic instance for manual refresh,
-  // but stream for background updates if we want to listen to service.
   final ScreenerLogic _logic = ScreenerLogic();
-
-  // Mix of Future and Stream?
-  // Let's just use FutureBuilder for now for simplicity,
-  // OR listen to service updates for "Realtime" feel.
-
-  List<CoinData>? _coins;
-  bool _isLoading = true;
+  Stream<List<CoinData>>? _stream;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-
-    // Listen to background service updates only on mobile
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      FlutterBackgroundService().on('update').listen((event) {
-        if (event != null && event['data'] != null) {
-          final List<dynamic> list = event['data'] as List<dynamic>;
-          if (mounted) {
-            setState(() {
-              _coins = list
-                  .map(
-                    (json) =>
-                        CoinData.fromJson(Map<String, dynamic>.from(json)),
-                  )
-                  .toList();
-              _isLoading = false;
-            });
-          }
-        }
-      });
-    }
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final coins = await _logic.scan();
-      if (mounted) {
-        setState(() {
-          _coins = coins;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print(e);
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    _stream = _logic.coinStream;
   }
 
   Color _getStatusColor(String status) {
@@ -90,30 +37,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Short Setup (2x Leverage)'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
-        ],
+        title: const Text('Realtime Screener (Golang Backend)'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _coins == null || _coins!.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('No Data / Error'),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _coins!.length,
+      body: StreamBuilder<List<CoinData>>(
+        stream: _stream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+             return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final coins = snapshot.data ?? [];
+          if (coins.isEmpty) {
+             return const Center(child: Text('No Data / Waiting for Backend...'));
+          }
+          
+          return ListView.builder(
+              itemCount: coins.length,
               itemBuilder: (context, index) {
-                final coin = _coins![index];
+                final coin = coins[index];
                 final color = _getStatusColor(coin.status);
 
                 return Card(
@@ -141,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor: color,
                                 radius: 16,
                                 child: Text(
-                                  coin.status[0],
+                                  coin.status.length > 0 ? coin.status[0] : '?',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -334,7 +279,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
-            ),
+            );
+        }
+      ),
     );
   }
 }
