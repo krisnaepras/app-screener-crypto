@@ -62,6 +62,10 @@ class NotificationService {
           channelDescription: 'Notifications for Screener triggers',
           importance: Importance.max,
           priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          enableLights: true,
+          ticker: 'Screener Alert',
         );
 
     const NotificationDetails details = NotificationDetails(
