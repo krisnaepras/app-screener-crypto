@@ -35,8 +35,12 @@ class ScreenerLogic {
     final candidates =
         futuresTickers
             .where((t) => t.symbol.endsWith('USDT'))
-            .where((t) => !t.symbol.contains('_')) // Exclude delivery futures with expiry dates
-            .where((t) => activeSymbols.contains(t.symbol)) // Only TRADING status
+            .where(
+              (t) => !t.symbol.contains('_'),
+            ) // Exclude delivery futures with expiry dates
+            .where(
+              (t) => activeSymbols.contains(t.symbol),
+            ) // Only TRADING status
             .where(
               (t) => (double.tryParse(t.quoteVolume) ?? 0) > 50000000,
             ) // 50M
