@@ -5,6 +5,7 @@ import 'active_entries_screen.dart';
 import 'history_screen.dart';
 import 'rsi_screen.dart';
 import 'scalping_screen.dart';
+import 'binance_api_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -23,6 +24,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const HistoryScreen(),
     const RsiScreen(),
     const ScalpingScreen(),
+    const BinanceAPIScreen(),
   ];
 
   final List<String> _screenTitles = [
@@ -32,6 +34,7 @@ class _MainNavigationState extends State<MainNavigation> {
     'Riwayat',
     'RSI Screener',
     'Scalping',
+    'Binance API',
   ];
 
   void _onItemTapped(int index) {
@@ -112,6 +115,13 @@ class _MainNavigationState extends State<MainNavigation> {
               onTap: () => _onItemTapped(5),
             ),
             const Divider(),
+            ListTile(
+              leading: const Icon(Icons.api_outlined),
+              title: const Text('Binance API'),
+              subtitle: const Text('Connect trading account'),
+              selected: _selectedIndex == 6,
+              onTap: () => _onItemTapped(6),
+            ),
             ListTile(
               leading: const Icon(Icons.settings_outlined),
               title: const Text('Global Settings'),
