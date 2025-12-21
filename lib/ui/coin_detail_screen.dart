@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/coin_data.dart';
+import '../services/trade_service.dart';
 
 class CoinDetailScreen extends StatelessWidget {
   final CoinData coin;
@@ -284,6 +285,156 @@ class CoinDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
+      floatingActionButton: _buildEntryButton(context),
+    );
+  }
+
+  Widget? _buildEntryButton(BuildContext context) {
+    final features = coin.features;
+    if (features == null) return null;
+
+    // Determine if SHORT entry is recommended
+    final shortSignals =
+        (features.rsi > 70 ? 1 : 0) +
+        (features.overExtEma > 0.05 ? 1 : 0) +
+        (features.isAboveUpperBand ? 1 : 0) +
+        (features.isBreakdown ? 1 : 0) +
+        (features.pctChange24h > 20 ? 1 : 0);
+
+    if (shortSignals < 2) return null; // Only show button if decent setup
+
+    return FloatingActionButton.extended(
+      onPressed: () => _showEntryDialog(context),
+      backgroundColor: Colors.red,
+      icon: const Icon(Icons.trending_down),
+      label: const Text('Entry SHORT'),
+    );
+  }
+
+  void _showEntryDialog(BuildContext context) {
+    final entryPrice = coin.price;
+    final sl = entryPrice * 1.006; // 0.6% stop loss
+    final tp1 = entryPrice * 0.992; // 0.8%
+    final tp2 = entryPrice * 0.985; // 1.5%
+    final tp3 = entryPrice * 0.975; // 2.5%
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Entry ${coin.symbol} SHORT'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Score: ${coin.score.toStringAsFixed(0)} | ${coin.status}',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const Divider(height: 24),
+              _buildLevelInfo('Entry', entryPrice),
+              _buildLevelInfo('SL', sl, isLoss: true),
+              _buildLevelInfo('TP1', tp1),
+              _buildLevelInfo('TP2', tp2),
+              _buildLevelInfo('TP3', tp3),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Risk: 0.6% | Reward: 0.8% / 1.5% / 2.5%',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _submitEntry(context, entryPrice, sl, tp1, tp2, tp3);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitEntry(
+    BuildContext context,
+    double entryPrice,
+    double sl,
+    double tp1,
+    double tp2,
+    double tp3,
+  ) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final reason =
+          'Score: ${coin.score.toStringAsFixed(0)} | RSI: ${coin.features?.rsi.toStringAsFixed(0)} | ${coin.status}';
+
+      await TradeService.createEntry(
+        symbol: coin.symbol,
+        isLong: false,
+        entryPrice: entryPrice,
+        stopLoss: sl,
+        takeProfit1: tp1,
+        takeProfit2: tp2,
+        takeProfit3: tp3,
+        entryReason: reason,
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Entry ${coin.symbol} created'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Widget _buildLevelInfo(String label, double price, {bool isLoss = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isLoss ? Colors.red : Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text('\$${price.toStringAsFixed(4)}'),
+        ],
+      ),
     );
   }
 
