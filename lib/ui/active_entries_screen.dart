@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/trade_entry.dart';
 import '../services/trade_service.dart';
+import '../services/price_stream_service.dart';
 import 'widgets/active_trade_card.dart';
 
 class ActiveEntriesScreen extends StatefulWidget {
@@ -13,11 +14,35 @@ class ActiveEntriesScreen extends StatefulWidget {
 class _ActiveEntriesScreenState extends State<ActiveEntriesScreen> {
   List<TradeEntry> _activeEntries = [];
   bool _isLoading = true;
+  final PriceStreamService _priceService = PriceStreamService();
+  Map<String, double> _currentPrices = {};
 
   @override
   void initState() {
     super.initState();
     _loadActiveEntries();
+    _subscribeToRealTimePrices();
+  }
+
+  void _subscribeToRealTimePrices() {
+    _priceService.getPriceStream().listen(
+      (prices) {
+        if (mounted) {
+          setState(() {
+            _currentPrices = prices;
+          });
+        }
+      },
+      onError: (error) {
+        print('Price stream error: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _priceService.close();
+    super.dispose();
   }
 
   Future<void> _loadActiveEntries() async {
@@ -68,8 +93,9 @@ class _ActiveEntriesScreenState extends State<ActiveEntriesScreen> {
   Future<void> _submitCloseEntry(TradeEntry entry) async {
     setState(() => _isLoading = true);
     try {
-      // Get current price (use entry price as mock for now)
-      final currentPrice = entry.entryPrice * 0.997; // 0.3% move
+      // Use real-time price if available, fallback to mock
+      final currentPrice =
+          _currentPrices[entry.symbol] ?? entry.entryPrice * 0.997;
       final pl =
           (entry.entryPrice - currentPrice) * 10; // Assuming 10 position size
 
@@ -136,9 +162,13 @@ class _ActiveEntriesScreenState extends State<ActiveEntriesScreen> {
                 padding: const EdgeInsets.all(16),
                 itemCount: _activeEntries.length,
                 itemBuilder: (context, index) {
+                  final entry = _activeEntries[index];
+                  final currentPrice = _currentPrices[entry.symbol];
+
                   return ActiveTradeCard(
-                    entry: _activeEntries[index],
-                    onClose: () => _closeEntry(_activeEntries[index]),
+                    entry: entry,
+                    currentPrice: currentPrice, // Pass real-time price
+                    onClose: () => _closeEntry(entry),
                   );
                 },
               ),

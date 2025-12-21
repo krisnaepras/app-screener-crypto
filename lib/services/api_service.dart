@@ -11,6 +11,8 @@ class ApiService {
   // Deployed to Europe region to bypass Binance geo-restriction
   static const String herokuWsUrl =
       'wss://screener-micin-eu-040b62987c7f.herokuapp.com/ws';
+  static const String herokuBaseUrl =
+      'https://screener-micin-eu-040b62987c7f.herokuapp.com';
 
   // Localhost backend (development) - for local testing
   static String get localWsUrl {
@@ -23,12 +25,23 @@ class ApiService {
     }
   }
 
+  static String get localBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8080';
+    } else {
+      return 'http://localhost:8080';
+    }
+  }
+
   // Use Heroku EU by default (production), or set USE_LOCAL=true for development
   static const bool useLocal = bool.fromEnvironment(
     'USE_LOCAL',
     defaultValue: false,
   );
   static String get wsUrl => useLocal ? localWsUrl : herokuWsUrl;
+  static String get baseUrl => useLocal ? localBaseUrl : herokuBaseUrl;
 
   Stream<List<CoinData>> getCoinStream() {
     _channel = WebSocketChannel.connect(Uri.parse(wsUrl));

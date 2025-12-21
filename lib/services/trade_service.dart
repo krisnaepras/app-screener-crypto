@@ -56,13 +56,20 @@ class TradeService {
         entryReason: entryReason,
       );
 
+      final requestBody = entry.toJson();
+      print('Request URL: $baseUrl');
+      print('Request body: ${jsonEncode(requestBody)}');
+
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(entry.toJson()),
+        body: jsonEncode(requestBody),
       );
 
-      if (response.statusCode == 200) {
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return TradeEntry.fromJson(jsonDecode(response.body));
       } else {
         throw Exception('Failed to create entry: ${response.body}');

@@ -108,9 +108,13 @@ class _EntrySetupScreenState extends State<EntrySetupScreen> {
   ) async {
     setState(() => _isLoading = true);
     try {
+      print('Creating entry for ${coin.symbol}...');
+      final rsiValue = coin.features?.rsi ?? 0;
       final reason =
-          '1m: Overbought (RSI ${coin.features?.rsi.toStringAsFixed(0)}%) | 5m: Breakdown signal';
-      await TradeService.createEntry(
+          '1m: Overbought (RSI ${rsiValue.toStringAsFixed(0)}%) | 5m: Breakdown signal';
+
+      print('Calling TradeService.createEntry...');
+      final entry = await TradeService.createEntry(
         symbol: coin.symbol,
         isLong: false,
         entryPrice: entryPrice,
@@ -121,16 +125,27 @@ class _EntrySetupScreenState extends State<EntrySetupScreen> {
         entryReason: reason,
       );
 
+      print('Entry created successfully: ${entry.id}');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✓ Entry ${coin.symbol} created')),
+          SnackBar(
+            content: Text('✓ Entry ${coin.symbol} created'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error creating entry: $e');
+      print('Stack trace: $stackTrace');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     } finally {
       setState(() => _isLoading = false);

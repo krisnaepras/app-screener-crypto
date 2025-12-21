@@ -114,11 +114,16 @@ class _MainNavigationState extends State<MainNavigation> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.settings_outlined),
-              title: const Text('Settings'),
+              title: const Text('Global Settings'),
+              subtitle: const Text('App preferences'),
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Settings coming soon')),
+                  const SnackBar(
+                    content: Text(
+                      'Global Settings coming soon. For Scalping Settings, go to Scalping tab.',
+                    ),
+                  ),
                 );
               },
             ),

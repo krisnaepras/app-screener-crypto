@@ -30,10 +30,10 @@ class _RsiScreenState extends State<RsiScreen> {
   }
 
   List<CoinData> _filterRsiCoins(List<CoinData> coins) {
-    // Filter untuk RSI >= 60 atau RSI <= 40
+    // Filter untuk RSI > 70 (Overbought only)
     var filtered = coins.where((coin) {
       if (coin.features == null) return false;
-      return coin.features!.rsi >= 60 || coin.features!.rsi <= 40;
+      return coin.features!.rsi > 70;
     }).toList();
 
     // Apply search filter
@@ -158,7 +158,7 @@ class _RsiScreenState extends State<RsiScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Overbought (60-70+): Siap SHORT | Oversold (30-40): Siap LONG',
+                  'Overbought (> 70): Siap SHORT',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],

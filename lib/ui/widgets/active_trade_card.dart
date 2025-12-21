@@ -2,23 +2,62 @@ import 'package:flutter/material.dart';
 import '../../models/trade_entry.dart';
 import 'package:intl/intl.dart';
 
-class ActiveTradeCard extends StatelessWidget {
+class ActiveTradeCard extends StatefulWidget {
   final TradeEntry entry;
+  final double? currentPrice; // Real-time price from websocket
   final VoidCallback onClose;
 
   const ActiveTradeCard({
     super.key,
     required this.entry,
+    this.currentPrice,
     required this.onClose,
   });
 
   @override
+  State<ActiveTradeCard> createState() => _ActiveTradeCardState();
+}
+
+class _ActiveTradeCardState extends State<ActiveTradeCard> {
+  double? _previousPrice;
+  bool _isPriceIncreasing = false;
+
+  @override
+  void didUpdateWidget(ActiveTradeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Detect price change direction for animation
+    if (widget.currentPrice != null && oldWidget.currentPrice != null) {
+      if (widget.currentPrice! > oldWidget.currentPrice!) {
+        setState(() {
+          _isPriceIncreasing = true;
+          _previousPrice = oldWidget.currentPrice;
+        });
+      } else if (widget.currentPrice! < oldWidget.currentPrice!) {
+        setState(() {
+          _isPriceIncreasing = false;
+          _previousPrice = oldWidget.currentPrice;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final timeAgo = _getTimeAgo(entry.entryTime);
-    final currentPrice = entry.isLong
-        ? entry.entryPrice * 1.002
-        : entry.entryPrice * 0.998;
+    final timeAgo = _getTimeAgo(widget.entry.entryTime);
+
+    // Use real-time price if available, otherwise fallback to mock
+    final currentPrice =
+        widget.currentPrice ??
+        (widget.entry.isLong
+            ? widget.entry.entryPrice * 1.002
+            : widget.entry.entryPrice * 0.998);
+
     final unrealizedPL = _calculateUnrealizedPL(currentPrice);
+    final priceChangePercent =
+        ((currentPrice - widget.entry.entryPrice) /
+        widget.entry.entryPrice *
+        100);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -34,7 +73,7 @@ class ActiveTradeCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      entry.symbol,
+                      widget.entry.symbol,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -47,11 +86,11 @@ class ActiveTradeCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: entry.isLong ? Colors.green : Colors.red,
+                        color: widget.entry.isLong ? Colors.green : Colors.red,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        entry.isLong ? 'LONG' : 'SHORT',
+                        widget.entry.isLong ? 'LONG' : 'SHORT',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -59,6 +98,25 @@ class ActiveTradeCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Real-time indicator
+                    if (widget.currentPrice != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 _buildStatusBadge(),
@@ -73,8 +131,15 @@ class ActiveTradeCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildPriceInfo('Entry', entry.entryPrice),
-                _buildPriceInfo('Current', currentPrice),
+                _buildPriceInfo('Entry', widget.entry.entryPrice),
+                _buildPriceInfo(
+                  'Current',
+                  currentPrice,
+                  priceChange: priceChangePercent,
+                  isIncreasing: _previousPrice != null
+                      ? currentPrice > _previousPrice!
+                      : null,
+                ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -96,9 +161,9 @@ class ActiveTradeCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildTargetProgress(),
+            _buildTargetProgress(currentPrice),
             const SizedBox(height: 12),
-            if (entry.entryReason.isNotEmpty)
+            if (widget.entry.entryReason.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -115,7 +180,7 @@ class ActiveTradeCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        entry.entryReason,
+                        widget.entry.entryReason,
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
@@ -126,7 +191,7 @@ class ActiveTradeCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: onClose,
+                onPressed: widget.onClose,
                 icon: const Icon(Icons.close, size: 18),
                 label: const Text('Close Position'),
                 style: OutlinedButton.styleFrom(
@@ -145,7 +210,7 @@ class ActiveTradeCard extends StatelessWidget {
     Color color;
     String text;
 
-    switch (entry.status) {
+    switch (widget.entry.status) {
       case 'tp1_hit':
         color = Colors.green;
         text = 'TP1 Hit';
@@ -180,45 +245,80 @@ class ActiveTradeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceInfo(String label, double price) {
+  Widget _buildPriceInfo(
+    String label,
+    double price, {
+    double? priceChange,
+    bool? isIncreasing,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
         const SizedBox(height: 4),
-        Text(
-          '\$${price.toStringAsFixed(4)}',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Text(
+              '\$${price.toStringAsFixed(4)}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            if (priceChange != null) ...[
+              const SizedBox(width: 4),
+              Icon(
+                isIncreasing == true
+                    ? Icons.arrow_upward
+                    : isIncreasing == false
+                    ? Icons.arrow_downward
+                    : Icons.remove,
+                size: 12,
+                color: isIncreasing == true
+                    ? Colors.green
+                    : isIncreasing == false
+                    ? Colors.red
+                    : Colors.grey,
+              ),
+              Text(
+                '${priceChange >= 0 ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: priceChange >= 0 ? Colors.green : Colors.red,
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildTargetProgress() {
+  Widget _buildTargetProgress(double currentPrice) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTargetRow('SL', entry.stopLoss, Colors.red),
+        _buildTargetRow('SL', widget.entry.stopLoss, Colors.red, currentPrice),
         const SizedBox(height: 8),
         _buildTargetRow(
           'TP1',
-          entry.takeProfit1,
+          widget.entry.takeProfit1,
           Colors.green,
-          hit: entry.status.contains('tp1'),
+          currentPrice,
+          hit: widget.entry.status.contains('tp1'),
         ),
         const SizedBox(height: 4),
         _buildTargetRow(
           'TP2',
-          entry.takeProfit2,
+          widget.entry.takeProfit2,
           Colors.green,
-          hit: entry.status.contains('tp2'),
+          currentPrice,
+          hit: widget.entry.status.contains('tp2'),
         ),
         const SizedBox(height: 4),
         _buildTargetRow(
           'TP3',
-          entry.takeProfit3,
+          widget.entry.takeProfit3,
           Colors.green,
-          hit: entry.status.contains('tp3'),
+          currentPrice,
+          hit: widget.entry.status.contains('tp3'),
         ),
       ],
     );
@@ -226,39 +326,98 @@ class ActiveTradeCard extends StatelessWidget {
 
   Widget _buildTargetRow(
     String label,
-    double price,
-    Color color, {
+    double targetPrice,
+    Color color,
+    double currentPrice, {
     bool hit = false,
   }) {
+    // Calculate progress towards target
+    final isLong = widget.entry.isLong;
+    final entry = widget.entry.entryPrice;
+    final isStopLoss = label == 'SL';
+
+    double progress = 0.0;
+    if (isLong) {
+      if (isStopLoss) {
+        // For long SL, progress increases as price goes down
+        progress = ((entry - currentPrice) / (entry - targetPrice)).clamp(
+          0.0,
+          1.0,
+        );
+      } else {
+        // For long TP, progress increases as price goes up
+        progress = ((currentPrice - entry) / (targetPrice - entry)).clamp(
+          0.0,
+          1.0,
+        );
+      }
+    } else {
+      if (isStopLoss) {
+        // For short SL, progress increases as price goes up
+        progress = ((currentPrice - entry) / (targetPrice - entry)).clamp(
+          0.0,
+          1.0,
+        );
+      } else {
+        // For short TP, progress increases as price goes down
+        progress = ((entry - currentPrice) / (entry - targetPrice)).clamp(
+          0.0,
+          1.0,
+        );
+      }
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '\$${price.toStringAsFixed(4)}',
-              style: const TextStyle(fontSize: 13),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '\$${targetPrice.toStringAsFixed(4)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        color.withOpacity(0.7),
+                      ),
+                      minHeight: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        if (hit) const Icon(Icons.check_circle, color: Colors.green, size: 18),
+        if (hit)
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Icon(Icons.check_circle, color: Colors.green, size: 18),
+          ),
       ],
     );
   }
@@ -279,9 +438,9 @@ class ActiveTradeCard extends StatelessWidget {
   }
 
   double _calculateUnrealizedPL(double currentPrice) {
-    final diff = entry.isLong
-        ? currentPrice - entry.entryPrice
-        : entry.entryPrice - currentPrice;
+    final diff = widget.entry.isLong
+        ? currentPrice - widget.entry.entryPrice
+        : widget.entry.entryPrice - currentPrice;
     return diff * 10; // Assuming position size of 10
   }
 }

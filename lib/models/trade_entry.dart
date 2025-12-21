@@ -32,22 +32,28 @@ class TradeEntry {
     this.entryReason = '',
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'symbol': symbol,
-    'isLong': isLong,
-    'entryPrice': entryPrice,
-    'stopLoss': stopLoss,
-    'takeProfit1': takeProfit1,
-    'takeProfit2': takeProfit2,
-    'takeProfit3': takeProfit3,
-    'entryTime': entryTime.toIso8601String(),
-    'status': status,
-    'exitPrice': exitPrice,
-    'exitTime': exitTime?.toIso8601String(),
-    'profitLoss': profitLoss,
-    'entryReason': entryReason,
-  };
+  Map<String, dynamic> toJson() {
+    // Convert to UTC and use RFC3339 format (compatible with Go's time.Time)
+    final entryTimeUtc = entryTime.toUtc().toIso8601String();
+    final exitTimeUtc = exitTime?.toUtc().toIso8601String();
+
+    return {
+      'id': id,
+      'symbol': symbol,
+      'isLong': isLong,
+      'entryPrice': entryPrice,
+      'stopLoss': stopLoss,
+      'takeProfit1': takeProfit1,
+      'takeProfit2': takeProfit2,
+      'takeProfit3': takeProfit3,
+      'entryTime': entryTimeUtc,
+      'status': status,
+      'exitPrice': exitPrice,
+      'exitTime': exitTimeUtc,
+      'profitLoss': profitLoss,
+      'entryReason': entryReason,
+    };
+  }
 
   factory TradeEntry.fromJson(Map<String, dynamic> json) => TradeEntry(
     id: json['id'],

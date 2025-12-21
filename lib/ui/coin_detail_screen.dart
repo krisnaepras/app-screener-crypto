@@ -293,21 +293,37 @@ class CoinDetailScreen extends StatelessWidget {
     final features = coin.features;
     if (features == null) return null;
 
-    // Determine if SHORT entry is recommended
-    final shortSignals =
-        (features.rsi > 70 ? 1 : 0) +
-        (features.overExtEma > 0.05 ? 1 : 0) +
-        (features.isAboveUpperBand ? 1 : 0) +
-        (features.isBreakdown ? 1 : 0) +
-        (features.pctChange24h > 20 ? 1 : 0);
+    // Determine if SHORT entry is recommended - STRICTER CRITERIA
+    // Count strong signals (marked with 🔴) vs warning signals (⚠️)
+    int strongSignals = 0;
+    int warningSignals = 0;
 
-    if (shortSignals < 2) return null; // Only show button if decent setup
+    // Strong signals (must have at least 2)
+    if (features.rsi > 75) strongSignals++; // Extreme overbought
+    if (features.overExtEma > 0.08) strongSignals++; // Very overextended
+    if (features.pctChange24h > 40) strongSignals++; // Extreme pump
+    if (coin.basisSpread > 2.0) strongSignals++; // Very overleveraged
+
+    // Warning signals (supporting evidence)
+    if (features.rsi > 70) warningSignals++;
+    if (features.overExtEma > 0.05) warningSignals++;
+    if (features.isAboveUpperBand) warningSignals++;
+    if (features.isBreakdown) warningSignals++;
+    if (features.pctChange24h > 25) warningSignals++;
+    if (features.rejectionWickRatio > 0.5) warningSignals++;
+
+    // Require: At least 2 strong signals OR 1 strong + 3 warnings
+    // This ensures HIGH quality reversal setups only
+    final isGoodSetup =
+        strongSignals >= 2 || (strongSignals >= 1 && warningSignals >= 3);
+
+    if (!isGoodSetup) return null;
 
     return FloatingActionButton.extended(
       onPressed: () => _showEntryDialog(context),
       backgroundColor: Colors.red,
       icon: const Icon(Icons.trending_down),
-      label: const Text('Entry SHORT'),
+      label: Text(strongSignals >= 2 ? 'Entry SHORT 🔥' : 'Entry SHORT'),
     );
   }
 
@@ -443,25 +459,67 @@ class CoinDetailScreen extends StatelessWidget {
     final shortSignals = <String>[];
     final longSignals = <String>[];
 
-    // SHORT signals
-    if (features.rsi > 70)
-      shortSignals.add('RSI overbought (${features.rsi.toStringAsFixed(0)})');
-    if (features.overExtEma > 0.05)
+    // SHORT signals - Stricter criteria for reversal accuracy
+    // RSI: Extreme overbought required
+    if (features.rsi > 75) {
       shortSignals.add(
-        'Overextended dari EMA50 (${(features.overExtEma * 100).toStringAsFixed(1)}%)',
+        '🔴 RSI extreme overbought (${features.rsi.toStringAsFixed(0)})',
       );
-    if (features.isAboveUpperBand)
-      shortSignals.add('Harga di atas Bollinger Band atas');
-    if (features.isBreakdown)
-      shortSignals.add('Breakdown dari support terdeteksi');
-    if (features.pctChange24h > 20)
+    } else if (features.rsi > 70) {
       shortSignals.add(
-        'Pump besar 24h (${features.pctChange24h.toStringAsFixed(1)}%)',
+        '⚠️ RSI overbought (${features.rsi.toStringAsFixed(0)})',
       );
-    if (coin.basisSpread > 1.5)
+    }
+
+    // EMA: Significant overextension
+    if (features.overExtEma > 0.08) {
       shortSignals.add(
-        'Basis spread tinggi (${coin.basisSpread.toStringAsFixed(2)}%)',
+        '🔴 Sangat overextended dari EMA50 (${(features.overExtEma * 100).toStringAsFixed(1)}%)',
       );
+    } else if (features.overExtEma > 0.05) {
+      shortSignals.add(
+        '⚠️ Overextended dari EMA50 (${(features.overExtEma * 100).toStringAsFixed(1)}%)',
+      );
+    }
+
+    // Above BB: Price exhaustion signal
+    if (features.isAboveUpperBand) {
+      shortSignals.add('⚠️ Harga di atas Bollinger Band atas (exhaustion)');
+    }
+
+    // Breakdown: Structure break confirmation
+    if (features.isBreakdown) {
+      shortSignals.add('✓ Breakdown dari support terdeteksi');
+    }
+
+    // Pump: Large 24h move suggests exhaustion
+    if (features.pctChange24h > 40) {
+      shortSignals.add(
+        '🔴 Pump ekstrem 24h (${features.pctChange24h.toStringAsFixed(1)}%)',
+      );
+    } else if (features.pctChange24h > 25) {
+      shortSignals.add(
+        '⚠️ Pump besar 24h (${features.pctChange24h.toStringAsFixed(1)}%)',
+      );
+    }
+
+    // Basis: Contango suggests overleveraged longs
+    if (coin.basisSpread > 2.0) {
+      shortSignals.add(
+        '🔴 Basis spread sangat tinggi (${coin.basisSpread.toStringAsFixed(2)}%) - long overleveraged',
+      );
+    } else if (coin.basisSpread > 1.5) {
+      shortSignals.add(
+        '⚠️ Basis spread tinggi (${coin.basisSpread.toStringAsFixed(2)}%)',
+      );
+    }
+
+    // Rejection wick: Selling pressure at highs
+    if (features.rejectionWickRatio > 0.5) {
+      shortSignals.add(
+        '✓ Rejection wick besar (${(features.rejectionWickRatio * 100).toStringAsFixed(0)}%) - selling pressure',
+      );
+    }
 
     // LONG signals
     if (features.rsi < 30)
