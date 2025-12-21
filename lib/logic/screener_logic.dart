@@ -11,6 +11,13 @@ class ScreenerLogic {
   StreamSubscription<List<CoinData>>? _notificationSubscription;
 
   Stream<List<CoinData>> get coinStream {
+    // Avoid network/websocket connections during widget/unit tests.
+    final bool isTest =
+        !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+    if (isTest) {
+      return Stream<List<CoinData>>.empty();
+    }
+
     final stream = _apiService.getCoinStream();
 
     // Start monitoring for notifications if on mobile

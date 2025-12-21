@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "flutter run (emulator-5554)",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"run",
+				"-d",
+				"emulator-5554",
+				"--debug"
+			],
+			"isBackground": true
+		}
+	]
+}
