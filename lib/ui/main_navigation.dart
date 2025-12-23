@@ -71,7 +71,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<String> _screenTitles = [
     'Home',
     'Scalping Setup (1m)',
-    'Intraday Setup (15m+1h)',
+    'Intraday SHORT (15m+1h)',
     'Entry Berjalan',
     'Riwayat',
     'RSI Screener',
@@ -131,9 +131,9 @@ class _MainNavigationState extends State<MainNavigation> {
               onTap: () => _onItemTapped(1),
             ),
             ListTile(
-              leading: const Icon(Icons.schedule),
-              title: const Text('Intraday Setup (15m+1h)'),
-              subtitle: const Text('Swing trade 1-4 jam'),
+              leading: const Icon(Icons.trending_down, color: Colors.red),
+              title: const Text('Intraday SHORT (15m+1h)'),
+              subtitle: const Text('Short setup 1-4 jam'),
               selected: _selectedIndex == 2,
               onTap: () => _onItemTapped(2),
             ),

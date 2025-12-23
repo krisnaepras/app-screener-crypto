@@ -35,13 +35,20 @@ class IntradayDetailScreen extends StatelessWidget {
                 color: statusColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(
-                'INTRADAY ${coin.intradayStatus}',
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.trending_down, color: Colors.red, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    'SHORT ${coin.intradayStatus}',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -586,10 +593,10 @@ class IntradayDetailScreen extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.lightbulb, color: Colors.amber, size: 20),
+              Icon(Icons.trending_down, color: Colors.red, size: 20),
               SizedBox(width: 8),
               Text(
-                'Trading Guide Intraday',
+                'SHORT Trading Guide',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -601,23 +608,23 @@ class IntradayDetailScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildGuideItem(
             '1',
-            'Konfirmasi trend di TF 1h terlebih dahulu',
-            Colors.blue,
+            'Konfirmasi RSI overbought (>65) di TF 1h',
+            Colors.red,
           ),
           _buildGuideItem(
             '2',
-            'Cari entry point di TF 15m saat pullback',
-            Colors.green,
-          ),
-          _buildGuideItem(
-            '3',
-            'Entry ketika RSI 15m bounce dari oversold/support',
+            'Tunggu rejection candle atau bearish divergence',
             Colors.orange,
           ),
           _buildGuideItem(
-            '4',
-            'Target profit 1-2% dalam 1-4 jam',
+            '3',
+            'Entry SHORT saat harga break support di TF 15m',
             Colors.purple,
+          ),
+          _buildGuideItem(
+            '4',
+            'Stop loss di atas recent high, target 1-2%',
+            Colors.blue,
           ),
         ],
       ),
@@ -677,7 +684,7 @@ class IntradayDetailScreen extends StatelessWidget {
               Icon(Icons.shield, color: Colors.red, size: 20),
               SizedBox(width: 8),
               Text(
-                'Risk Management',
+                'SHORT Risk Management',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -688,10 +695,11 @@ class IntradayDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            '• Stop Loss: 0.5-1% dari entry\n'
+            '• Stop Loss: Di atas recent high (0.5-1%)\n'
             '• Risk per trade: Max 2% dari modal\n'
             '• Risk:Reward minimal 1:2\n'
-            '• Jangan hold lebih dari 4 jam jika tidak sesuai plan',
+            '• Cut loss jika harga break up dengan volume\n'
+            '• Jangan counter-trend di strong uptrend',
             style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
           ),
         ],

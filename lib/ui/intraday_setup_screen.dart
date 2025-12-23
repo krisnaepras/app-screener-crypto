@@ -26,7 +26,7 @@ class IntradaySetupScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A2332),
         title: const Text(
-          '📊 Intraday Setup (15m + 1h)',
+          '� Intraday SHORT (15m + 1h)',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -48,20 +48,20 @@ class IntradaySetupScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.indigo.withOpacity(0.3),
-                    Colors.purple.withOpacity(0.2),
+                    Colors.red.withOpacity(0.3),
+                    Colors.orange.withOpacity(0.2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.indigo.withOpacity(0.5)),
+                border: Border.all(color: Colors.red.withOpacity(0.5)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.indigo, size: 20),
+                  Icon(Icons.trending_down, color: Colors.red, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Setup intraday berdasarkan analisis TF 15m + 1h. Cocok untuk swing trade 1-4 jam.',
+                      '🔻 SHORT ONLY - Mencari setup SELL berdasarkan overbought di TF 15m + 1h. Target 1-4 jam.',
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
@@ -73,8 +73,8 @@ class IntradaySetupScreen extends StatelessWidget {
             // HOT Section
             _buildStatusSection(
               context,
-              title: '🔥 HOT - Ready Entry',
-              subtitle: '2 TF Aligned, Score ≥45',
+              title: '🔥 HOT SHORT - Ready to Sell',
+              subtitle: '2 TF Overbought, Score ≥45',
               coins: hotCoins,
               statusColor: Colors.red,
               gradientColors: [
@@ -86,8 +86,8 @@ class IntradaySetupScreen extends StatelessWidget {
             // WARM Section
             _buildStatusSection(
               context,
-              title: '🌡️ WARM - Almost Ready',
-              subtitle: '1 TF Aligned, Score ≥35',
+              title: '🌡️ WARM SHORT - Almost Ready',
+              subtitle: '1 TF Overbought, Score ≥35',
               coins: warmCoins,
               statusColor: Colors.orange,
               gradientColors: [
@@ -99,8 +99,8 @@ class IntradaySetupScreen extends StatelessWidget {
             // COOL Section
             _buildStatusSection(
               context,
-              title: '❄️ COOL - Watchlist',
-              subtitle: 'Score ≥30, Building Setup',
+              title: '❄️ COOL SHORT - Watchlist',
+              subtitle: 'Score ≥30, Building Short Setup',
               coins: coolCoins,
               statusColor: Colors.blue,
               gradientColors: [
@@ -122,7 +122,7 @@ class IntradaySetupScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Belum ada setup intraday yang terdeteksi',
+                        'Belum ada setup SHORT intraday yang terdeteksi',
                         style: TextStyle(color: Colors.grey[500], fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
