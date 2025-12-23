@@ -71,6 +71,12 @@ class CoinData {
   final double breakoutScore;
   final List<TimeframeScore> breakoutTfScores;
   final MarketFeatures? breakoutFeatures;
+  // Follow Trend fields
+  final String followTrendStatus;
+  final String followTrendDirection;
+  final double followTrendScore;
+  final List<TimeframeScore> followTrendTfScores;
+  final MarketFeatures? followTrendFeatures;
 
   CoinData({
     required this.symbol,
@@ -98,6 +104,11 @@ class CoinData {
     this.breakoutScore = 0,
     this.breakoutTfScores = const [],
     this.breakoutFeatures,
+    this.followTrendStatus = '',
+    this.followTrendDirection = '',
+    this.followTrendScore = 0,
+    this.followTrendTfScores = const [],
+    this.followTrendFeatures,
   });
 
   factory CoinData.fromJson(Map<String, dynamic> json) {
@@ -132,6 +143,13 @@ class CoinData {
     List<TimeframeScore> parsedBreakoutTfScores = [];
     if (json['breakoutTfScores'] != null) {
       parsedBreakoutTfScores = (json['breakoutTfScores'] as List)
+          .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<TimeframeScore> parsedFollowTrendTfScores = [];
+    if (json['followTrendTfScores'] != null) {
+      parsedFollowTrendTfScores = (json['followTrendTfScores'] as List)
           .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
@@ -176,6 +194,15 @@ class CoinData {
               Map<String, dynamic>.from(json['breakoutFeatures']),
             )
           : null,
+      followTrendStatus: json['followTrendStatus'] ?? '',
+      followTrendDirection: json['followTrendDirection'] ?? '',
+      followTrendScore: (json['followTrendScore'] ?? 0).toDouble(),
+      followTrendTfScores: parsedFollowTrendTfScores,
+      followTrendFeatures: json['followTrendFeatures'] != null
+          ? MarketFeatures.fromJson(
+              Map<String, dynamic>.from(json['followTrendFeatures']),
+            )
+          : null,
     );
   }
 
@@ -205,5 +232,19 @@ class CoinData {
         .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
         .toList(),
     'pullbackFeatures': pullbackFeatures?.toJson(),
+    'breakoutStatus': breakoutStatus,
+    'breakoutDirection': breakoutDirection,
+    'breakoutScore': breakoutScore,
+    'breakoutTfScores': breakoutTfScores
+        .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
+        .toList(),
+    'breakoutFeatures': breakoutFeatures?.toJson(),
+    'followTrendStatus': followTrendStatus,
+    'followTrendDirection': followTrendDirection,
+    'followTrendScore': followTrendScore,
+    'followTrendTfScores': followTrendTfScores
+        .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
+        .toList(),
+    'followTrendFeatures': followTrendFeatures?.toJson(),
   };
 }

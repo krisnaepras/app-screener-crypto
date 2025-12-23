@@ -4,6 +4,7 @@ import 'entry_setup_screen.dart';
 import 'intraday_setup_screen.dart';
 import 'pullback_setup_screen.dart';
 import 'breakout_setup_screen.dart';
+import 'follow_trend_screen.dart';
 import 'rsi_screen.dart';
 import '../models/coin_data.dart';
 import '../services/api_service.dart';
@@ -61,6 +62,7 @@ class _MainNavigationState extends State<MainNavigation> {
     IntradaySetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
     PullbackSetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
     BreakoutSetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
+    FollowTrendScreen(coins: _coins, onRefresh: () => _initWebSocket()),
     const RsiScreen(),
   ];
 
@@ -70,6 +72,7 @@ class _MainNavigationState extends State<MainNavigation> {
     'Intraday SHORT (15m+1h)',
     'Pullback Entry (Buy Dip)',
     'Breakout Hunter (15m+1h)',
+    'Follow Trend (LONG/SHORT)',
     'RSI Screener',
   ];
 
@@ -261,13 +264,23 @@ class _MainNavigationState extends State<MainNavigation> {
                   colors: [Colors.purple.shade400, Colors.purple.shade600],
                 ),
               ),
+              _buildDrawerItem(
+                context,
+                icon: Icons.trending_flat_rounded,
+                title: 'Follow Trend',
+                subtitle: 'LONG/SHORT signals',
+                index: 5,
+                gradient: LinearGradient(
+                  colors: [Colors.teal.shade400, Colors.teal.shade600],
+                ),
+              ),
               const Divider(height: 24),
               _buildDrawerItem(
                 context,
                 icon: Icons.analytics_rounded,
                 title: 'RSI Screener',
                 subtitle: 'Technical analysis',
-                index: 5,
+                index: 6,
                 gradient: LinearGradient(
                   colors: [Colors.cyan.shade400, Colors.cyan.shade600],
                 ),
