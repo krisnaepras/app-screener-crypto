@@ -25,6 +25,10 @@ class MarketFeatures {
   final double rsiSlope;
   final double volumeDeclineRatio;
   final bool isLosingMomentum;
+  // Market condition indicators
+  final bool hasVolumeSurge;
+  final bool hasBbSqueeze;
+  final bool isMaAligned;
 
   MarketFeatures({
     required this.pctChange24h,
@@ -48,6 +52,9 @@ class MarketFeatures {
     this.rsiSlope = 0,
     this.volumeDeclineRatio = 1.0,
     this.isLosingMomentum = false,
+    this.hasVolumeSurge = false,
+    this.hasBbSqueeze = false,
+    this.isMaAligned = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -72,6 +79,9 @@ class MarketFeatures {
     'rsiSlope': rsiSlope,
     'volumeDeclineRatio': volumeDeclineRatio,
     'isLosingMomentum': isLosingMomentum,
+    'hasVolumeSurge': hasVolumeSurge,
+    'hasBbSqueeze': hasBbSqueeze,
+    'isMaAligned': isMaAligned,
   };
 
   factory MarketFeatures.fromJson(Map<String, dynamic> json) => MarketFeatures(
@@ -96,6 +106,9 @@ class MarketFeatures {
     rsiSlope: (json['rsiSlope'] ?? 0).toDouble(),
     volumeDeclineRatio: (json['volumeDeclineRatio'] ?? 1.0).toDouble(),
     isLosingMomentum: json['isLosingMomentum'] ?? false,
+    hasVolumeSurge: json['hasVolumeSurge'] ?? false,
+    hasBbSqueeze: json['hasBbSqueeze'] ?? false,
+    isMaAligned: json['isMaAligned'] ?? false,
   );
 }
 

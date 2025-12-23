@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'entry_setup_screen.dart';
+import 'intraday_setup_screen.dart';
 import 'active_entries_screen.dart';
 import 'history_screen.dart';
 import 'rsi_screen.dart';
 import 'scalping_screen.dart';
 import 'binance_api_screen.dart';
+import '../models/coin_data.dart';
+import '../services/api_service.dart';
+import 'dart:async';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,10 +20,47 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  List<CoinData> _coins = [];
+  final ApiService _apiService = ApiService();
+  StreamSubscription? _coinSubscription;
 
-  final List<Widget> _screens = [
+  @override
+  void initState() {
+    super.initState();
+    _initWebSocket();
+  }
+
+  void _initWebSocket() {
+    _coinSubscription?.cancel();
+    _coinSubscription = _apiService.getCoinStream().listen(
+      (coins) {
+        if (mounted) {
+          setState(() {
+            _coins = coins;
+          });
+        }
+      },
+      onError: (e) {
+        print('WebSocket error: $e');
+        // Retry after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) _initWebSocket();
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _coinSubscription?.cancel();
+    _apiService.close();
+    super.dispose();
+  }
+
+  List<Widget> get _screens => [
     const HomeScreen(),
     const EntrySetupScreen(),
+    IntradaySetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
     const ActiveEntriesScreen(),
     const HistoryScreen(),
     const RsiScreen(),
@@ -29,7 +70,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<String> _screenTitles = [
     'Home',
-    'Entry Setup (1m)',
+    'Scalping Setup (1m)',
+    'Intraday Setup (15m+1h)',
     'Entry Berjalan',
     'Riwayat',
     'RSI Screener',
@@ -84,43 +126,50 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
             ListTile(
               leading: const Icon(Icons.trending_up),
-              title: const Text('Entry Setup (1m)'),
+              title: const Text('Scalping Setup (1m)'),
               selected: _selectedIndex == 1,
               onTap: () => _onItemTapped(1),
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Intraday Setup (15m+1h)'),
+              subtitle: const Text('Swing trade 1-4 jam'),
+              selected: _selectedIndex == 2,
+              onTap: () => _onItemTapped(2),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.play_circle_outline),
               title: const Text('Entry Berjalan'),
-              selected: _selectedIndex == 2,
-              onTap: () => _onItemTapped(2),
+              selected: _selectedIndex == 3,
+              onTap: () => _onItemTapped(3),
             ),
             ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Riwayat'),
-              selected: _selectedIndex == 3,
-              onTap: () => _onItemTapped(3),
+              selected: _selectedIndex == 4,
+              onTap: () => _onItemTapped(4),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.show_chart_outlined),
               title: const Text('RSI Screener'),
-              selected: _selectedIndex == 4,
-              onTap: () => _onItemTapped(4),
+              selected: _selectedIndex == 5,
+              onTap: () => _onItemTapped(5),
             ),
             ListTile(
               leading: const Icon(Icons.flash_on_outlined),
               title: const Text('Scalping'),
-              selected: _selectedIndex == 5,
-              onTap: () => _onItemTapped(5),
+              selected: _selectedIndex == 6,
+              onTap: () => _onItemTapped(6),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.api_outlined),
               title: const Text('Binance API'),
               subtitle: const Text('Connect trading account'),
-              selected: _selectedIndex == 6,
-              onTap: () => _onItemTapped(6),
+              selected: _selectedIndex == 7,
+              onTap: () => _onItemTapped(7),
             ),
             ListTile(
               leading: const Icon(Icons.settings_outlined),

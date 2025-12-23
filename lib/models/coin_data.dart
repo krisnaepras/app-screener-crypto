@@ -55,6 +55,11 @@ class CoinData {
   final double fundingRate;
   final double basisSpread;
   final MarketFeatures? features;
+  // Intraday fields
+  final String intradayStatus;
+  final double intradayScore;
+  final List<TimeframeScore> intradayTfScores;
+  final MarketFeatures? intradayFeatures;
 
   CoinData({
     required this.symbol,
@@ -69,6 +74,10 @@ class CoinData {
     required this.fundingRate,
     this.basisSpread = 0,
     this.features,
+    this.intradayStatus = '',
+    this.intradayScore = 0,
+    this.intradayTfScores = const [],
+    this.intradayFeatures,
   });
 
   factory CoinData.fromJson(Map<String, dynamic> json) {
@@ -83,6 +92,13 @@ class CoinData {
     if (json['tfFeatures'] != null) {
       parsedTfFeatures = (json['tfFeatures'] as List)
           .map((e) => TimeframeFeatures.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<TimeframeScore> parsedIntradayTfScores = [];
+    if (json['intradayTfScores'] != null) {
+      parsedIntradayTfScores = (json['intradayTfScores'] as List)
+          .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
 
@@ -101,21 +117,36 @@ class CoinData {
       features: json['features'] != null
           ? MarketFeatures.fromJson(Map<String, dynamic>.from(json['features']))
           : null,
+      intradayStatus: json['intradayStatus'] ?? '',
+      intradayScore: (json['intradayScore'] ?? 0).toDouble(),
+      intradayTfScores: parsedIntradayTfScores,
+      intradayFeatures: json['intradayFeatures'] != null
+          ? MarketFeatures.fromJson(
+              Map<String, dynamic>.from(json['intradayFeatures']),
+            )
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'symbol': symbol,
-        'price': price,
-        'score': score,
-        'status': status,
-        'triggerTf': triggerTf,
-        'confluenceCount': confluenceCount,
-        'tfScores':
-            tfScores.map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi}).toList(),
-        'priceChangePercent': priceChangePercent,
-        'fundingRate': fundingRate,
-        'basisSpread': basisSpread,
-        'features': features?.toJson(),
-      };
+    'symbol': symbol,
+    'price': price,
+    'score': score,
+    'status': status,
+    'triggerTf': triggerTf,
+    'confluenceCount': confluenceCount,
+    'tfScores': tfScores
+        .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
+        .toList(),
+    'priceChangePercent': priceChangePercent,
+    'fundingRate': fundingRate,
+    'basisSpread': basisSpread,
+    'features': features?.toJson(),
+    'intradayStatus': intradayStatus,
+    'intradayScore': intradayScore,
+    'intradayTfScores': intradayTfScores
+        .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
+        .toList(),
+    'intradayFeatures': intradayFeatures?.toJson(),
+  };
 }
