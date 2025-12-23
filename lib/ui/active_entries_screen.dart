@@ -129,50 +129,44 @@ class _ActiveEntriesScreenState extends State<ActiveEntriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadActiveEntries,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _activeEntries.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.inbox_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Tidak ada entry aktif',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Entry akan muncul di sini setelah Anda masuk posisi',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _activeEntries.length,
-                itemBuilder: (context, index) {
-                  final entry = _activeEntries[index];
-                  final currentPrice = _currentPrices[entry.symbol];
-
-                  return ActiveTradeCard(
-                    entry: entry,
-                    currentPrice: currentPrice, // Pass real-time price
-                    onClose: () => _closeEntry(entry),
-                  );
-                },
+    return RefreshIndicator(
+      onRefresh: _loadActiveEntries,
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _activeEntries.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, size: 56, color: Colors.grey[400]),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tidak ada entry aktif',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Entry akan muncul di sini setelah Anda masuk posisi',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-      ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _activeEntries.length,
+              itemBuilder: (context, index) {
+                final entry = _activeEntries[index];
+                final currentPrice = _currentPrices[entry.symbol];
+
+                return ActiveTradeCard(
+                  entry: entry,
+                  currentPrice: currentPrice, // Pass real-time price
+                  onClose: () => _closeEntry(entry),
+                );
+              },
+            ),
     );
   }
 }

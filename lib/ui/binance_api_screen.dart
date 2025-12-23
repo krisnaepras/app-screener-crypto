@@ -240,35 +240,32 @@ class _BinanceAPIScreenState extends State<BinanceAPIScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Binance API Settings')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // API Credentials Section
-            _buildSectionTitle('API Credentials'),
-            _buildCredentialsSection(),
-            const SizedBox(height: 24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // API Credentials Section
+          _buildSectionTitle('API Credentials'),
+          _buildCredentialsSection(),
+          const SizedBox(height: 20),
 
-            // Account Info Section (if connected)
-            if (_hasCredentials && _accountInfo != null) ...[
-              _buildSectionTitle('Account Information'),
-              _buildAccountInfoSection(),
-              const SizedBox(height: 24),
-            ],
-
-            // Trading Configuration Section
-            if (_tradingConfig != null) ...[
-              _buildSectionTitle('Trading Configuration'),
-              _buildTradingConfigSection(),
-            ],
+          // Account Info Section (if connected)
+          if (_hasCredentials && _accountInfo != null) ...[
+            _buildSectionTitle('Account Information'),
+            _buildAccountInfoSection(),
+            const SizedBox(height: 20),
           ],
-        ),
+
+          // Trading Configuration Section
+          if (_tradingConfig != null) ...[
+            _buildSectionTitle('Trading Configuration'),
+            _buildTradingConfigSection(),
+          ],
+        ],
       ),
     );
   }

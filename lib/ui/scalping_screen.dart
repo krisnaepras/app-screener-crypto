@@ -107,83 +107,85 @@ class _ScalpingScreenState extends State<ScalpingScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_settings == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              const Text('Gagal memuat settings'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadSettings,
-                child: const Text('Coba Lagi'),
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text('Gagal memuat settings'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadSettings,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Auto Scalping SHORT'),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _settings!.enabled ? Colors.green : Colors.grey,
-                borderRadius: BorderRadius.circular(12),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Row(
+            children: [
+              const Text(
+                'Auto Scalping SHORT',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              child: Text(
-                _settings!.enabled ? 'ON' : 'OFF',
-                style: const TextStyle(fontSize: 11, color: Colors.white),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _settings!.enabled ? Colors.green : Colors.grey,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _settings!.enabled ? 'ON' : 'OFF',
+                  style: const TextStyle(fontSize: 11, color: Colors.white),
+                ),
               ),
-            ),
-          ],
+              const Spacer(),
+              IconButton(
+                tooltip: 'Settings',
+                icon: const Icon(Icons.settings),
+                onPressed: _showSettingsDialog,
+              ),
+            ],
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _showSettingsDialog,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Control Panel
-          _buildControlPanel(),
-          const Divider(height: 1),
-          // Stats & History
-          Expanded(
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  const TabBar(
-                    tabs: [
-                      Tab(text: 'Active'),
-                      Tab(text: 'History'),
-                    ],
+
+        // Control Panel
+        _buildControlPanel(),
+        const Divider(height: 1),
+
+        // Stats & History
+        Expanded(
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                const TabBar(
+                  tabs: [
+                    Tab(text: 'Active'),
+                    Tab(text: 'History'),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [_buildActiveTab(), _buildHistoryTab()],
                   ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [_buildActiveTab(), _buildHistoryTab()],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

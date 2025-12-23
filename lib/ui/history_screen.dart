@@ -64,89 +64,84 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ? 0.0
         : (winCount / _historyEntries.length);
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatCard(
-                      'Total P/L',
-                      '\$${totalPL.toStringAsFixed(2)}',
-                      totalPL >= 0 ? Colors.green : Colors.red,
-                    ),
-                    _buildStatCard(
-                      'Win Rate',
-                      '${(winRate * 100).toStringAsFixed(1)}%',
-                      winRate >= 0.5 ? Colors.green : Colors.orange,
-                    ),
-                    _buildStatCard(
-                      'Total Trades',
-                      '${_historyEntries.length}',
-                      Colors.blue,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildFilterChip('Semua', 'all')),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFilterChip('Profit', 'profit')),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFilterChip('Loss', 'loss')),
-                  ],
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredEntries.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.history, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada riwayat',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadHistory,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredEntries.length,
-                      itemBuilder: (context, index) {
-                        return HistoryTradeCard(entry: _filteredEntries[index]);
-                      },
-                    ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatCard(
+                    'Total P/L',
+                    '\$${totalPL.toStringAsFixed(2)}',
+                    totalPL >= 0 ? Colors.green : Colors.red,
                   ),
+                  _buildStatCard(
+                    'Win Rate',
+                    '${(winRate * 100).toStringAsFixed(1)}%',
+                    winRate >= 0.5 ? Colors.green : Colors.orange,
+                  ),
+                  _buildStatCard(
+                    'Total Trades',
+                    '${_historyEntries.length}',
+                    Colors.blue,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _buildFilterChip('Semua', 'all')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Profit', 'profit')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Loss', 'loss')),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _filteredEntries.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tidak ada riwayat',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadHistory,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _filteredEntries.length,
+                    itemBuilder: (context, index) {
+                      return HistoryTradeCard(entry: _filteredEntries[index]);
+                    },
+                  ),
+                ),
+        ),
+      ],
     );
   }
 

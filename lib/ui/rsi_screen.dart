@@ -137,272 +137,267 @@ class _RsiScreenState extends State<RsiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('RSI Reversal (Realtime)')),
-      body: Column(
-        children: [
-          // Info Card
-          Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🔄 RSI Reversal Timing',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Overbought (> 70): Siap SHORT',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        // Info Card
+        Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
           ),
-
-          // Search field
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search coin...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🔄 RSI Reversal Timing',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
+              SizedBox(height: 4),
+              Text(
+                'Overbought (> 70): Siap SHORT',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+        ),
 
-          Expanded(
-            child: StreamBuilder<List<CoinData>>(
-              stream: _stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+        // Search field
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search coin...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
 
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+        Expanded(
+          child: StreamBuilder<List<CoinData>>(
+            stream: _stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                final allCoins = snapshot.data ?? [];
-                final coins = _filterRsiCoins(allCoins);
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
-                if (coins.isEmpty) {
-                  return const Center(child: Text('No RSI signals'));
-                }
+              final allCoins = snapshot.data ?? [];
+              final coins = _filterRsiCoins(allCoins);
 
-                return ListView.builder(
-                  itemCount: coins.length,
-                  itemBuilder: (context, index) {
-                    final coin = coins[index];
-                    final features = coin.features!;
-                    final reversalSignal = _getReversalSignal(coin);
-                    final signalColor = _getSignalColor(reversalSignal);
+              if (coins.isEmpty) {
+                return const Center(child: Text('No RSI signals'));
+              }
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CoinDetailScreen(coin: coin),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  // RSI Badge
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: features.rsi > 70
-                                          ? Colors.red
-                                          : features.rsi < 30
-                                          ? Colors.green
-                                          : features.rsi >= 60
-                                          ? Colors.orange
-                                          : Colors.blue,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        const Text(
-                                          'RSI',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          features.rsi.toStringAsFixed(0),
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: coins.length,
+                itemBuilder: (context, index) {
+                  final coin = coins[index];
+                  final features = coin.features!;
+                  final reversalSignal = _getReversalSignal(coin);
+                  final signalColor = _getSignalColor(reversalSignal);
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CoinDetailScreen(coin: coin),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                // RSI Badge
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: features.rsi > 70
+                                        ? Colors.red
+                                        : features.rsi < 30
+                                        ? Colors.green
+                                        : features.rsi >= 60
+                                        ? Colors.orange
+                                        : Colors.blue,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  const SizedBox(width: 12),
-
-                                  // Coin Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          coin.symbol.replaceAll('USDT', ''),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        Text(
-                                          '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${coin.priceChangePercent.toStringAsFixed(2)}%',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: coin.priceChangePercent >= 0
-                                                ? Colors.green
-                                                : Colors.red,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Score
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  child: Column(
                                     children: [
-                                      Text(
-                                        'Score',
+                                      const Text(
+                                        'RSI',
                                         style: TextStyle(
                                           fontSize: 10,
-                                          color: Colors.grey.shade400,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
                                       ),
                                       Text(
-                                        coin.score.toStringAsFixed(0),
+                                        features.rsi.toStringAsFixed(0),
                                         style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
+                                ),
+                                const SizedBox(width: 12),
 
-                              // Reversal Signal
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: signalColor.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: signalColor.withOpacity(0.5),
+                                // Coin Info
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        coin.symbol.replaceAll('USDT', ''),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${coin.priceChangePercent.toStringAsFixed(2)}%',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: coin.priceChangePercent >= 0
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Text(
-                                  reversalSignal,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: signalColor,
-                                  ),
+
+                                // Score
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Score',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                    ),
+                                    Text(
+                                      coin.score.toStringAsFixed(0),
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Reversal Signal
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: signalColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: signalColor.withOpacity(0.5),
                                 ),
                               ),
-
-                              // Additional indicators
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
-                                children: [
-                                  if (features.isBreakdown)
-                                    _buildBadge('BREAK', Colors.red),
-                                  if (features.isRetest)
-                                    _buildBadge('RETEST', Colors.blue),
-                                  if (features.overExtEma.abs() > 0.05)
-                                    _buildBadge(
-                                      'EMA ${(features.overExtEma * 100).toStringAsFixed(1)}%',
-                                      features.overExtEma > 0
-                                          ? Colors.red
-                                          : Colors.green,
-                                    ),
-                                  if (features.isAboveUpperBand)
-                                    _buildBadge('ABOVE BB', Colors.orange),
-                                  if (coin.basisSpread > 1.0)
-                                    _buildBadge(
-                                      'BASIS ${coin.basisSpread.toStringAsFixed(1)}%',
-                                      Colors.red,
-                                    ),
-                                  if (features.nearestSupport != null)
-                                    _buildBadge(
-                                      'SUP \$${features.nearestSupport!.toStringAsFixed(2)}',
-                                      Colors.blue.shade700,
-                                    ),
-                                ],
+                              child: Text(
+                                reversalSignal,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: signalColor,
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+
+                            // Additional indicators
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: [
+                                if (features.isBreakdown)
+                                  _buildBadge('BREAK', Colors.red),
+                                if (features.isRetest)
+                                  _buildBadge('RETEST', Colors.blue),
+                                if (features.overExtEma.abs() > 0.05)
+                                  _buildBadge(
+                                    'EMA ${(features.overExtEma * 100).toStringAsFixed(1)}%',
+                                    features.overExtEma > 0
+                                        ? Colors.red
+                                        : Colors.green,
+                                  ),
+                                if (features.isAboveUpperBand)
+                                  _buildBadge('ABOVE BB', Colors.orange),
+                                if (coin.basisSpread > 1.0)
+                                  _buildBadge(
+                                    'BASIS ${coin.basisSpread.toStringAsFixed(1)}%',
+                                    Colors.red,
+                                  ),
+                                if (features.nearestSupport != null)
+                                  _buildBadge(
+                                    'SUP \$${features.nearestSupport!.toStringAsFixed(2)}',
+                                    Colors.blue.shade700,
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

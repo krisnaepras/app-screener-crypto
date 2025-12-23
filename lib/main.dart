@@ -153,22 +153,56 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.deepPurple,
+      brightness: Brightness.dark,
+    );
+
+    final baseTheme = ThemeData(
+      colorScheme: colorScheme,
+      useMaterial3: true,
+      brightness: Brightness.dark,
+    );
+
+    final appTheme = baseTheme.copyWith(
+      visualDensity: VisualDensity.compact,
+      appBarTheme: baseTheme.appBarTheme.copyWith(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      dividerTheme: const DividerThemeData(space: 1, thickness: 1),
+      cardTheme: CardThemeData(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      listTileTheme: const ListTileThemeData(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        isDense: true,
+        filled: true,
+        fillColor: colorScheme.surfaceVariant.withOpacity(0.25),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.surface,
+        contentTextStyle: TextStyle(color: colorScheme.onSurface),
+      ),
+    );
+
     return MaterialApp(
       title: 'Screener Micin App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: appTheme,
+      darkTheme: appTheme,
       themeMode: ThemeMode.dark,
       home: const MainNavigation(),
     );

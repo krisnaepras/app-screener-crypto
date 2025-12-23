@@ -11,10 +11,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ScreenerLogic _logic = ScreenerLogic();
+  ScreenerLogic _logic = ScreenerLogic();
   Stream<List<CoinData>>? _stream;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -29,9 +30,29 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _refresh() {
+    setState(() => _isRefreshing = true);
+    _logic.dispose();
+    _logic = ScreenerLogic();
+    _stream = _logic.coinStream;
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) setState(() => _isRefreshing = false);
+    });
+  }
+
   List<CoinData> _filterCoins(List<CoinData> coins) {
-    if (_searchQuery.isEmpty) return coins;
-    return coins
+    // First filter to only show TRIGGER, SETUP, WATCH status
+    var validCoins = coins
+        .where(
+          (c) =>
+              c.status == 'TRIGGER' ||
+              c.status == 'SETUP' ||
+              c.status == 'WATCH',
+        )
+        .toList();
+
+    if (_searchQuery.isEmpty) return validCoins;
+    return validCoins
         .where(
           (coin) =>
               coin.symbol.toLowerCase().contains(_searchQuery.toLowerCase()),
@@ -52,310 +73,397 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Color _getConfluenceColor(int count) {
+    if (count >= 2) return Colors.green;
+    if (count >= 1) return Colors.orange;
+    return Colors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Realtime Screener (Golang Backend)')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search coin (e.g., BTC, ETH)...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search coin...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _isRefreshing ? null : _refresh,
+                icon: _isRefreshing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                tooltip: 'Refresh',
+              ),
+            ],
           ),
-          Expanded(
-            child: StreamBuilder<List<CoinData>>(
-              stream: _stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+        ),
+        Expanded(
+          child: StreamBuilder<List<CoinData>>(
+            stream: _stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
-                final allCoins = snapshot.data ?? [];
-                final coins = _filterCoins(allCoins);
-                if (coins.isEmpty) {
-                  return const Center(
-                    child: Text('No Data / Waiting for Backend...'),
-                  );
-                }
+              final allCoins = snapshot.data ?? [];
+              final coins = _filterCoins(allCoins);
+              if (coins.isEmpty) {
+                return const Center(
+                  child: Text('No Data / Waiting for Backend...'),
+                );
+              }
 
-                return ListView.builder(
-                  itemCount: coins.length,
-                  itemBuilder: (context, index) {
-                    final coin = coins[index];
-                    final color = _getStatusColor(coin.status);
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                itemCount: coins.length,
+                itemBuilder: (context, index) {
+                  final coin = coins[index];
+                  final statusColor = _getStatusColor(coin.status);
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CoinDetailScreen(coin: coin),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: color,
-                                    radius: 16,
-                                    child: Text(
-                                      coin.status.length > 0
-                                          ? coin.status[0]
-                                          : '?',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
+                  return Card(
+                    elevation: 1,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CoinDetailScreen(coin: coin),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: statusColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    coin.status.isNotEmpty
+                                        ? coin.status[0]
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          coin.symbol.replaceAll('USDT', ''),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'Score: ${coin.score.toStringAsFixed(0)}',
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              coin.symbol.replaceAll(
+                                                'USDT',
+                                                '',
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                               style: const TextStyle(
-                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
                                               ),
                                             ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              'Score ${coin.score.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            coin.status,
+                                            style: TextStyle(
+                                              color: statusColor,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            '${coin.priceChangePercent.toStringAsFixed(2)}%',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  coin.priceChangePercent >= 0
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                            ),
+                                          ),
+                                          if (coin.triggerTf != null &&
+                                              coin.triggerTf!.isNotEmpty) ...[
                                             const SizedBox(width: 8),
-                                            Text(
-                                              '${coin.priceChangePercent.toStringAsFixed(2)}%',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    coin.priceChangePercent >= 0
-                                                    ? Colors.green
-                                                    : Colors.red,
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.purple,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                coin.triggerTf!.toUpperCase(),
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
                                               ),
                                             ),
                                           ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Text(
-                                        coin.status,
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                          if (coin.confluenceCount > 0) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: _getConfluenceColor(
+                                                  coin.confluenceCount,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '${coin.confluenceCount}TF',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                              // Signals badges
-                              if (coin.features != null) ...[
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    if (coin.features!.isBreakdown)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'BREAK',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    if (coin.features!.isRetest)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'RETEST',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    if (coin.features!.rsi > 70)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade700,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'RSI${coin.features!.rsi.toStringAsFixed(0)}',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    if (coin.features!.overExtEma > 0.03)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade800,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'EXT',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    if (coin.basisSpread > 1.0)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade600,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'BASIS',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    if (coin.fundingRate > 0.01)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'FUND',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '\$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
+                            ),
+                            if (coin.features != null) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  if (coin.features!.isBreakdown)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'BREAK',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  if (coin.features!.isRetest)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'RETEST',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  if (coin.features!.rsi > 70)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade700,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'RSI${coin.features!.rsi.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  if (coin.features!.overExtEma > 0.03)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade800,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'EXT',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  if (coin.basisSpread > 1.0)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade600,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'BASIS',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  if (coin.fundingRate > 0.01)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'FUND',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

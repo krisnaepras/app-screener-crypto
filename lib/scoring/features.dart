@@ -18,6 +18,13 @@ class MarketFeatures {
   final bool isBreakdown;
   final bool isRetest;
   final bool isRetestFail;
+  // Loss of Momentum indicators
+  final bool hasRsiDivergence;
+  final bool hasVolumeDivergence;
+  final double momentumSlope;
+  final double rsiSlope;
+  final double volumeDeclineRatio;
+  final bool isLosingMomentum;
 
   MarketFeatures({
     required this.pctChange24h,
@@ -35,6 +42,12 @@ class MarketFeatures {
     required this.isBreakdown,
     required this.isRetest,
     required this.isRetestFail,
+    this.hasRsiDivergence = false,
+    this.hasVolumeDivergence = false,
+    this.momentumSlope = 0,
+    this.rsiSlope = 0,
+    this.volumeDeclineRatio = 1.0,
+    this.isLosingMomentum = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -53,6 +66,12 @@ class MarketFeatures {
     'isBreakdown': isBreakdown,
     'isRetest': isRetest,
     'isRetestFail': isRetestFail,
+    'hasRsiDivergence': hasRsiDivergence,
+    'hasVolumeDivergence': hasVolumeDivergence,
+    'momentumSlope': momentumSlope,
+    'rsiSlope': rsiSlope,
+    'volumeDeclineRatio': volumeDeclineRatio,
+    'isLosingMomentum': isLosingMomentum,
   };
 
   factory MarketFeatures.fromJson(Map<String, dynamic> json) => MarketFeatures(
@@ -71,6 +90,12 @@ class MarketFeatures {
     isBreakdown: json['isBreakdown'] ?? false,
     isRetest: json['isRetest'] ?? false,
     isRetestFail: json['isRetestFail'] ?? false,
+    hasRsiDivergence: json['hasRsiDivergence'] ?? false,
+    hasVolumeDivergence: json['hasVolumeDivergence'] ?? false,
+    momentumSlope: (json['momentumSlope'] ?? 0).toDouble(),
+    rsiSlope: (json['rsiSlope'] ?? 0).toDouble(),
+    volumeDeclineRatio: (json['volumeDeclineRatio'] ?? 1.0).toDouble(),
+    isLosingMomentum: json['isLosingMomentum'] ?? false,
   );
 }
 

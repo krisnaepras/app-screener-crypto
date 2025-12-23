@@ -37,27 +37,34 @@ class ScreenerLogic {
 
   void _checkForTriggers(List<CoinData> coins) {
     for (final coin in coins) {
-      // Only notify for TRIGGER status with high score
-      if (coin.status == 'TRIGGER' && coin.score >= 70) {
+      // Notify for TRIGGER status with score >= 65 (lowered for multi-TF)
+      // or SETUP with score >= 60 (for early warning)
+      if ((coin.status == 'TRIGGER' && coin.score >= 65) ||
+          (coin.status == 'SETUP' && coin.score >= 60)) {
         // Check if we haven't notified for this coin recently
         if (!_notifiedCoins.contains(coin.symbol)) {
           _notifiedCoins.add(coin.symbol);
 
+          final tfInfo = coin.triggerTf != null && coin.triggerTf!.isNotEmpty
+              ? ' [${coin.triggerTf!.toUpperCase()}]'
+              : '';
+
           // Send notification
           NotificationService.showNotification(
             id: coin.symbol.hashCode,
-            title: '🚀 ${coin.symbol.replaceAll('USDT', '')} TRIGGER',
+            title:
+                '🚀 ${coin.symbol.replaceAll('USDT', '')} ${coin.status}$tfInfo',
             body:
                 'Score: ${coin.score.toStringAsFixed(0)} | Price: \$${coin.price > 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(5)} | Change: ${coin.priceChangePercent.toStringAsFixed(2)}%',
           );
 
-          // Remove from notified set after 5 minutes to allow re-notification
-          Future.delayed(const Duration(minutes: 5), () {
+          // Remove from notified set after 3 minutes to allow re-notification
+          Future.delayed(const Duration(minutes: 3), () {
             _notifiedCoins.remove(coin.symbol);
           });
         }
       } else {
-        // If coin is no longer TRIGGER, remove from notified set
+        // If coin is no longer TRIGGER/high-SETUP, remove from notified set
         _notifiedCoins.remove(coin.symbol);
       }
     }
