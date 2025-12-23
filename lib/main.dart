@@ -153,15 +153,22 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Modern color scheme with vibrant accents
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.deepPurple,
+      seedColor: const Color(0xFF6366F1), // Indigo
       brightness: Brightness.dark,
+      primary: const Color(0xFF6366F1),
+      secondary: const Color(0xFF8B5CF6), // Purple
+      tertiary: const Color(0xFF06B6D4), // Cyan
+      surface: const Color(0xFF0F172A), // Slate 900
+      background: const Color(0xFF020617), // Slate 950
     );
 
     final baseTheme = ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
       brightness: Brightness.dark,
+      scaffoldBackgroundColor: colorScheme.background,
     );
 
     final appTheme = baseTheme.copyWith(
@@ -169,33 +176,69 @@ class _MyAppState extends State<MyApp> {
       appBarTheme: baseTheme.appBarTheme.copyWith(
         centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 4,
+        backgroundColor: colorScheme.surface,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: colorScheme.onSurface,
+        ),
       ),
-      dividerTheme: const DividerThemeData(space: 1, thickness: 1),
+      dividerTheme: DividerThemeData(
+        space: 1,
+        thickness: 1,
+        color: colorScheme.outline.withOpacity(0.1),
+      ),
       cardTheme: CardThemeData(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
       ),
       listTileTheme: const ListTileThemeData(
         dense: true,
         visualDensity: VisualDensity.compact,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.25),
+        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
+          horizontal: 16,
+          vertical: 12,
         ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.surface,
         contentTextStyle: TextStyle(color: colorScheme.onSurface),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: colorScheme.surfaceVariant.withOpacity(0.3),
+        labelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
 
