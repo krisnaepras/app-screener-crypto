@@ -55,11 +55,22 @@ class CoinData {
   final double fundingRate;
   final double basisSpread;
   final MarketFeatures? features;
-  // Intraday fields
+  // Intraday fields (SHORT)
   final String intradayStatus;
   final double intradayScore;
   final List<TimeframeScore> intradayTfScores;
   final MarketFeatures? intradayFeatures;
+  // Pullback Entry fields (Buy the Dip)
+  final String pullbackStatus;
+  final double pullbackScore;
+  final List<TimeframeScore> pullbackTfScores;
+  final MarketFeatures? pullbackFeatures;
+  // Breakout Hunter fields
+  final String breakoutStatus;
+  final String breakoutDirection;
+  final double breakoutScore;
+  final List<TimeframeScore> breakoutTfScores;
+  final MarketFeatures? breakoutFeatures;
 
   CoinData({
     required this.symbol,
@@ -78,6 +89,15 @@ class CoinData {
     this.intradayScore = 0,
     this.intradayTfScores = const [],
     this.intradayFeatures,
+    this.pullbackStatus = '',
+    this.pullbackScore = 0,
+    this.pullbackTfScores = const [],
+    this.pullbackFeatures,
+    this.breakoutStatus = '',
+    this.breakoutDirection = '',
+    this.breakoutScore = 0,
+    this.breakoutTfScores = const [],
+    this.breakoutFeatures,
   });
 
   factory CoinData.fromJson(Map<String, dynamic> json) {
@@ -98,6 +118,20 @@ class CoinData {
     List<TimeframeScore> parsedIntradayTfScores = [];
     if (json['intradayTfScores'] != null) {
       parsedIntradayTfScores = (json['intradayTfScores'] as List)
+          .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<TimeframeScore> parsedPullbackTfScores = [];
+    if (json['pullbackTfScores'] != null) {
+      parsedPullbackTfScores = (json['pullbackTfScores'] as List)
+          .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<TimeframeScore> parsedBreakoutTfScores = [];
+    if (json['breakoutTfScores'] != null) {
+      parsedBreakoutTfScores = (json['breakoutTfScores'] as List)
           .map((e) => TimeframeScore.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
@@ -125,6 +159,23 @@ class CoinData {
               Map<String, dynamic>.from(json['intradayFeatures']),
             )
           : null,
+      pullbackStatus: json['pullbackStatus'] ?? '',
+      pullbackScore: (json['pullbackScore'] ?? 0).toDouble(),
+      pullbackTfScores: parsedPullbackTfScores,
+      pullbackFeatures: json['pullbackFeatures'] != null
+          ? MarketFeatures.fromJson(
+              Map<String, dynamic>.from(json['pullbackFeatures']),
+            )
+          : null,
+      breakoutStatus: json['breakoutStatus'] ?? '',
+      breakoutDirection: json['breakoutDirection'] ?? '',
+      breakoutScore: (json['breakoutScore'] ?? 0).toDouble(),
+      breakoutTfScores: parsedBreakoutTfScores,
+      breakoutFeatures: json['breakoutFeatures'] != null
+          ? MarketFeatures.fromJson(
+              Map<String, dynamic>.from(json['breakoutFeatures']),
+            )
+          : null,
     );
   }
 
@@ -148,5 +199,11 @@ class CoinData {
         .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
         .toList(),
     'intradayFeatures': intradayFeatures?.toJson(),
+    'pullbackStatus': pullbackStatus,
+    'pullbackScore': pullbackScore,
+    'pullbackTfScores': pullbackTfScores
+        .map((e) => {'tf': e.tf, 'score': e.score, 'rsi': e.rsi})
+        .toList(),
+    'pullbackFeatures': pullbackFeatures?.toJson(),
   };
 }

@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'entry_setup_screen.dart';
 import 'intraday_setup_screen.dart';
-import 'active_entries_screen.dart';
-import 'history_screen.dart';
+import 'pullback_setup_screen.dart';
+import 'breakout_setup_screen.dart';
 import 'rsi_screen.dart';
-import 'scalping_screen.dart';
-import 'binance_api_screen.dart';
 import '../models/coin_data.dart';
 import '../services/api_service.dart';
 import 'dart:async';
@@ -61,22 +59,18 @@ class _MainNavigationState extends State<MainNavigation> {
     const HomeScreen(),
     const EntrySetupScreen(),
     IntradaySetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
-    const ActiveEntriesScreen(),
-    const HistoryScreen(),
+    PullbackSetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
+    BreakoutSetupScreen(coins: _coins, onRefresh: () => _initWebSocket()),
     const RsiScreen(),
-    const ScalpingScreen(),
-    const BinanceAPIScreen(),
   ];
 
   final List<String> _screenTitles = [
     'Home',
     'Scalping Setup (1m)',
     'Intraday SHORT (15m+1h)',
-    'Entry Berjalan',
-    'Riwayat',
+    'Pullback Entry (Buy Dip)',
+    'Breakout Hunter (15m+1h)',
     'RSI Screener',
-    'Scalping',
-    'Binance API',
   ];
 
   void _onItemTapped(int index) {
@@ -137,16 +131,17 @@ class _MainNavigationState extends State<MainNavigation> {
               selected: _selectedIndex == 2,
               onTap: () => _onItemTapped(2),
             ),
-            const Divider(),
             ListTile(
-              leading: const Icon(Icons.play_circle_outline),
-              title: const Text('Entry Berjalan'),
+              leading: const Icon(Icons.arrow_circle_up, color: Colors.green),
+              title: const Text('Pullback Entry (Buy Dip)'),
+              subtitle: const Text('Buy the dip di uptrend'),
               selected: _selectedIndex == 3,
               onTap: () => _onItemTapped(3),
             ),
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Riwayat'),
+              leading: const Icon(Icons.rocket_launch, color: Colors.blue),
+              title: const Text('Breakout Hunter'),
+              subtitle: const Text('Breakout + volume spike'),
               selected: _selectedIndex == 4,
               onTap: () => _onItemTapped(4),
             ),
@@ -156,35 +151,6 @@ class _MainNavigationState extends State<MainNavigation> {
               title: const Text('RSI Screener'),
               selected: _selectedIndex == 5,
               onTap: () => _onItemTapped(5),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flash_on_outlined),
-              title: const Text('Scalping'),
-              selected: _selectedIndex == 6,
-              onTap: () => _onItemTapped(6),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.api_outlined),
-              title: const Text('Binance API'),
-              subtitle: const Text('Connect trading account'),
-              selected: _selectedIndex == 7,
-              onTap: () => _onItemTapped(7),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Global Settings'),
-              subtitle: const Text('App preferences'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Global Settings coming soon. For Scalping Settings, go to Scalping tab.',
-                    ),
-                  ),
-                );
-              },
             ),
             ListTile(
               leading: const Icon(Icons.info_outlined),

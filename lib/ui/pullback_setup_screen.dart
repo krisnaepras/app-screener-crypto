@@ -1,36 +1,34 @@
 import 'package:flutter/material.dart';
 import '../models/coin_data.dart';
 import '../scoring/features.dart';
-import 'intraday_detail_screen.dart';
+import 'pullback_detail_screen.dart';
 
-class IntradaySetupScreen extends StatelessWidget {
+class PullbackSetupScreen extends StatelessWidget {
   final List<CoinData> coins;
   final VoidCallback? onRefresh;
 
-  const IntradaySetupScreen({super.key, required this.coins, this.onRefresh});
+  const PullbackSetupScreen({super.key, required this.coins, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    // Filter coins with intraday status - NEW STATUSES
-    final hotCoins = coins.where((c) => c.intradayStatus == 'HOT').toList();
-    final readyCoins = coins.where((c) => c.intradayStatus == 'READY').toList();
-    final watchCoins = coins.where((c) => c.intradayStatus == 'WATCH').toList();
-    final strongBuyCoins = coins
-        .where((c) => c.intradayStatus == 'STRONG_BUY')
+    // Filter coins with pullback status
+    final dipCoins = coins.where((c) => c.pullbackStatus == 'DIP').toList();
+    final bounceCoins = coins
+        .where((c) => c.pullbackStatus == 'BOUNCE')
         .toList();
+    final waitCoins = coins.where((c) => c.pullbackStatus == 'WAIT').toList();
 
-    // Sort by intraday score
-    hotCoins.sort((a, b) => b.intradayScore.compareTo(a.intradayScore));
-    readyCoins.sort((a, b) => b.intradayScore.compareTo(a.intradayScore));
-    watchCoins.sort((a, b) => b.intradayScore.compareTo(a.intradayScore));
-    strongBuyCoins.sort((a, b) => b.intradayScore.compareTo(a.intradayScore));
+    // Sort by pullback score
+    dipCoins.sort((a, b) => b.pullbackScore.compareTo(a.pullbackScore));
+    bounceCoins.sort((a, b) => b.pullbackScore.compareTo(a.pullbackScore));
+    waitCoins.sort((a, b) => b.pullbackScore.compareTo(a.pullbackScore));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1421),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A2332),
         title: const Text(
-          '📊 Intraday SHORT (15m + 1h)',
+          '📈 Pullback Entry (Buy the Dip)',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -52,20 +50,20 @@ class IntradaySetupScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.red.withOpacity(0.3),
-                    Colors.orange.withOpacity(0.2),
+                    Colors.green.withOpacity(0.3),
+                    Colors.teal.withOpacity(0.2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.5)),
+                border: Border.all(color: Colors.green.withOpacity(0.5)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.trending_down, color: Colors.red, size: 20),
+                  Icon(Icons.trending_up, color: Colors.green, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '🔻 SHORT ONLY - Score >70 + BOS = Siap Short. Score <50 = JANGAN SHORT (strong buy territory)!',
+                      '🟢 BUY THE DIP - Cari entry BUY saat uptrend koreksi. Setup di 5m/15m, eksekusi di 1m/3m.',
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
@@ -74,85 +72,46 @@ class IntradaySetupScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Statistics
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem('HOT', hotCoins.length, Colors.red),
-                  _buildStatItem('READY', readyCoins.length, Colors.orange),
-                  _buildStatItem('WATCH', watchCoins.length, Colors.yellow),
-                  _buildStatItem(
-                    'STRONG BUY',
-                    strongBuyCoins.length,
-                    Colors.green,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // HOT Section - Execute Short!
+            // DIP Section - Ready to buy
             _buildStatusSection(
               context,
-              title: '🔥 HOT - Execute Short NOW!',
-              subtitle: 'Score >70 + BOS + Volume Spike',
-              coins: hotCoins,
-              statusColor: Colors.red,
-              gradientColors: [
-                Colors.red.withOpacity(0.2),
-                Colors.orange.withOpacity(0.1),
-              ],
-            ),
-
-            // READY Section - BOS Confirmed
-            _buildStatusSection(
-              context,
-              title: '⚡ READY - BOS Confirmed',
-              subtitle: 'Score >70 + BOS, tunggu retest untuk entry',
-              coins: readyCoins,
-              statusColor: Colors.orange,
-              gradientColors: [
-                Colors.orange.withOpacity(0.2),
-                Colors.yellow.withOpacity(0.1),
-              ],
-            ),
-
-            // WATCH Section - Exhausted but no trigger
-            _buildStatusSection(
-              context,
-              title: '👀 WATCH - Waspada',
-              subtitle: 'Score 50-70, monitor untuk BOS',
-              coins: watchCoins,
-              statusColor: Colors.yellow,
-              gradientColors: [
-                Colors.yellow.withOpacity(0.2),
-                Colors.amber.withOpacity(0.1),
-              ],
-            ),
-
-            // STRONG_BUY Section - DON'T SHORT!
-            _buildStatusSection(
-              context,
-              title: '🚀 STRONG BUY - JANGAN SHORT!',
-              subtitle: 'Score <50, roket masih punya bahan bakar',
-              coins: strongBuyCoins,
+              title: '🎯 DIP - Ready to Buy!',
+              subtitle: 'Uptrend + Pullback + Bounce confirmed',
+              coins: dipCoins,
               statusColor: Colors.green,
               gradientColors: [
                 Colors.green.withOpacity(0.2),
-                Colors.lightGreen.withOpacity(0.1),
+                Colors.teal.withOpacity(0.1),
               ],
             ),
 
-            if (hotCoins.isEmpty &&
-                readyCoins.isEmpty &&
-                watchCoins.isEmpty &&
-                strongBuyCoins.isEmpty)
+            // BOUNCE Section - Starting to bounce
+            _buildStatusSection(
+              context,
+              title: '📈 BOUNCE - Confirming',
+              subtitle: 'Uptrend + Pullback, waiting bounce',
+              coins: bounceCoins,
+              statusColor: Colors.teal,
+              gradientColors: [
+                Colors.teal.withOpacity(0.2),
+                Colors.cyan.withOpacity(0.1),
+              ],
+            ),
+
+            // WAIT Section - Watching
+            _buildStatusSection(
+              context,
+              title: '⏳ WAIT - Watching',
+              subtitle: 'Setup forming, not ready yet',
+              coins: waitCoins,
+              statusColor: Colors.blue,
+              gradientColors: [
+                Colors.blue.withOpacity(0.2),
+                Colors.indigo.withOpacity(0.1),
+              ],
+            ),
+
+            if (dipCoins.isEmpty && bounceCoins.isEmpty && waitCoins.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(40),
@@ -165,7 +124,7 @@ class IntradaySetupScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Belum ada setup SHORT intraday yang terdeteksi',
+                        'Belum ada setup pullback yang terdeteksi',
                         style: TextStyle(color: Colors.grey[500], fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
@@ -176,22 +135,6 @@ class IntradaySetupScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStatItem(String label, int count, Color color) {
-    return Column(
-      children: [
-        Text(
-          '$count',
-          style: TextStyle(
-            color: color,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
-      ],
     );
   }
 
@@ -257,16 +200,18 @@ class IntradaySetupScreen extends StatelessWidget {
     CoinData coin,
     Color statusColor,
   ) {
-    // Get 15m and 1h TF scores
-    final tf15m = coin.intradayTfScores.where((t) => t.tf == '15m').firstOrNull;
-    final tf1h = coin.intradayTfScores.where((t) => t.tf == '1h').firstOrNull;
+    // Get TF scores
+    final tf5m = coin.pullbackTfScores.where((t) => t.tf == '5m').firstOrNull;
+    final tf15m = coin.pullbackTfScores.where((t) => t.tf == '15m').firstOrNull;
+    final tf1m = coin.pullbackTfScores.where((t) => t.tf == '1m').firstOrNull;
+    final tf3m = coin.pullbackTfScores.where((t) => t.tf == '3m').firstOrNull;
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => IntradayDetailScreen(coin: coin),
+            builder: (context) => PullbackDetailScreen(coin: coin),
           ),
         );
       },
@@ -312,13 +257,24 @@ class IntradaySetupScreen extends StatelessWidget {
                     color: statusColor.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    coin.intradayStatus,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.trending_up,
+                        color: Colors.green,
+                        size: 10,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        coin.pullbackStatus,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
@@ -348,25 +304,25 @@ class IntradaySetupScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            // TF Scores Row
+            // TF Scores Row - Setup (5m, 15m) + Execution (1m, 3m)
             Row(
               children: [
-                // Intraday Score
+                // Pullback Score
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
+                      color: Colors.green.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Column(
                       children: [
                         const Text(
                           'Score',
-                          style: TextStyle(color: Colors.purple, fontSize: 10),
+                          style: TextStyle(color: Colors.green, fontSize: 10),
                         ),
                         Text(
-                          coin.intradayScore.toStringAsFixed(0),
+                          coin.pullbackScore.toStringAsFixed(0),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -377,96 +333,74 @@ class IntradaySetupScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // 15m TF
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getTfColor(tf15m?.score ?? 0).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          '15m',
-                          style: TextStyle(color: Colors.white70, fontSize: 10),
-                        ),
-                        Text(
-                          '${tf15m?.score.toStringAsFixed(0) ?? '-'}',
-                          style: TextStyle(
-                            color: _getTfColor(tf15m?.score ?? 0),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (tf15m != null)
-                          Text(
-                            'RSI ${tf15m.rsi.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              color: _getRsiColor(tf15m.rsi),
-                              fontSize: 9,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 1h TF
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getTfColor(tf1h?.score ?? 0).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          '1h',
-                          style: TextStyle(color: Colors.white70, fontSize: 10),
-                        ),
-                        Text(
-                          '${tf1h?.score.toStringAsFixed(0) ?? '-'}',
-                          style: TextStyle(
-                            color: _getTfColor(tf1h?.score ?? 0),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (tf1h != null)
-                          Text(
-                            'RSI ${tf1h.rsi.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              color: _getRsiColor(tf1h.rsi),
-                              fontSize: 9,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+                const SizedBox(width: 6),
+                // 5m TF (Setup)
+                Expanded(child: _buildTfBox('5m', tf5m, 'Setup')),
+                const SizedBox(width: 6),
+                // 15m TF (Setup)
+                Expanded(child: _buildTfBox('15m', tf15m, 'Setup')),
+                const SizedBox(width: 6),
+                // 1m TF (Exec)
+                Expanded(child: _buildTfBox('1m', tf1m, 'Exec')),
               ],
             ),
             const SizedBox(height: 8),
-            // Feature indicators if available
-            if (coin.intradayFeatures != null) ...[
+            // Feature indicators
+            if (coin.pullbackFeatures != null) ...[
               Row(
                 children: [
-                  if (coin.intradayFeatures!.hasVolumeSurge)
-                    _buildFeatureBadge('📈 Vol Surge', Colors.green),
-                  if (coin.intradayFeatures!.hasBbSqueeze)
-                    _buildFeatureBadge('🎯 BB Squeeze', Colors.orange),
-                  if (coin.intradayFeatures!.hasRsiDivergence)
-                    _buildFeatureBadge('📊 RSI Div', Colors.purple),
-                  if (coin.intradayFeatures!.isMaAligned)
-                    _buildFeatureBadge('📐 MA Aligned', Colors.blue),
+                  if (coin.pullbackFeatures!.rsi < 45 &&
+                      coin.pullbackFeatures!.rsi > 25)
+                    _buildFeatureBadge('� RSI Pullback', Colors.orange),
+                  if (coin.pullbackFeatures!.distToSupportATR != null &&
+                      coin.pullbackFeatures!.distToSupportATR! < 2)
+                    _buildFeatureBadge('🎯 Near Support', Colors.green),
+                  if (coin.priceChangePercent > 0)
+                    _buildFeatureBadge('📈 Uptrend', Colors.teal),
                 ],
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTfBox(String label, TimeframeScore? tfScore, String type) {
+    final color = type == 'Setup' ? Colors.blue : Colors.purple;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: _getTfColor(tfScore?.score ?? 0).withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            '${tfScore?.score.toStringAsFixed(0) ?? '-'}',
+            style: TextStyle(
+              color: _getTfColor(tfScore?.score ?? 0),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+          if (tfScore != null)
+            Text(
+              'RSI ${tfScore.rsi.toStringAsFixed(0)}',
+              style: TextStyle(
+                color: _getRsiColorForBuy(tfScore.rsi),
+                fontSize: 8,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -491,14 +425,17 @@ class IntradaySetupScreen extends StatelessWidget {
   }
 
   Color _getTfColor(double score) {
-    if (score >= 40) return Colors.green;
-    if (score >= 30) return Colors.orange;
+    if (score >= 45) return Colors.green;
+    if (score >= 35) return Colors.teal;
+    if (score >= 25) return Colors.orange;
     return Colors.grey;
   }
 
-  Color _getRsiColor(double rsi) {
-    if (rsi <= 30) return Colors.green;
-    if (rsi >= 70) return Colors.red;
+  Color _getRsiColorForBuy(double rsi) {
+    // For buying dips, low RSI is good
+    if (rsi <= 35) return Colors.green; // Oversold - good for buy
+    if (rsi <= 45) return Colors.teal; // Pullback zone
+    if (rsi >= 65) return Colors.red; // Overbought - risky buy
     return Colors.grey;
   }
 
